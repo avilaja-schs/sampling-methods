@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sample &amp; Estimate</title>
+<style>
+/* Layout: scene (sticky) on the left, steps + worksheet on the right; stacks on phones. No external files. */
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #edf1ec;
+  --surface: #ffffff;
+  --ink: #14282a;
+  --muted: #566b68;
+  --line: #cdd9d3;
+  --chip: #e1e9e4;
+  --accent: #0e6f6a;
+  --accent-ink: #ffffff;
+  --frame: #f5b301;
+  --good: #1d7f47;
+  --good-bg: #d6f0df;
+  --bad: #b8352a;
+  --bad-bg: #fbe0dc;
+  --fcard-bg: #14282a;
+  --fcard-ink: #f2f7f4;
+  --fcard-mute: #9fb8b2;
+  --input-bg: #f7faf8;
+  --font: "Avenir Next", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1a1a; --surface: #142625; --ink: #e4efec; --muted: #8fb0aa; --line: #284240; --chip: #1c3331;
+    --accent: #3fc4b8; --accent-ink: #04201e; --good: #5bd894; --good-bg: #123a26; --bad: #ff8576; --bad-bg: #3f1b17;
+    --fcard-bg: #0a1212; --fcard-ink: #e8f3f0; --fcard-mute: #7fa29b; --input-bg: #0f1f1e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1a1a; --surface: #142625; --ink: #e4efec; --muted: #8fb0aa; --line: #284240; --chip: #1c3331;
+  --accent: #3fc4b8; --accent-ink: #04201e; --good: #5bd894; --good-bg: #123a26; --bad: #ff8576; --bad-bg: #3f1b17;
+  --fcard-bg: #0a1212; --fcard-ink: #e8f3f0; --fcard-mute: #7fa29b; --input-bg: #0f1f1e; color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--font); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px 56px; display: grid; gap: 16px; }
+
+header { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: stretch; justify-content: space-between; }
+h1 { margin: 0; font-size: clamp(1.75rem, 3.8vw, 2.5rem); letter-spacing: -0.02em; line-height: 1.1; }
+.tagline { margin: 8px 0 0; color: var(--muted); max-width: 40ch; }
+.title-block { flex: 1 1 260px; align-self: center; }
+.formula { flex: 0 1 460px; background: var(--fcard-bg); color: var(--fcard-ink); border-radius: var(--radius); padding: 14px 18px; }
+.formula .eq { font: 700 clamp(1.4rem, 3.2vw, 2rem)/1.2 var(--mono); letter-spacing: -0.01em; }
+.formula .vars { margin: 8px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; font-size: 0.88rem; color: var(--fcard-mute); }
+.formula .vars b { color: var(--fcard-ink); font-family: var(--mono); }
+.formula .round { margin: 10px 0 0; font-size: 0.9rem; color: var(--fcard-ink); border-top: 1px solid rgba(255,255,255,.18); padding-top: 8px; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: end; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--bg); }
+.seg button { border: 0; background: transparent; color: var(--ink); font: 600 0.95rem var(--font); padding: 9px 16px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--frame); outline-offset: 2px; }
+.btn { font: 700 0.98rem var(--font); border-radius: 999px; padding: 10px 20px; border: 2px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.controls .spacer { flex: 1; }
+
+main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.scene-col { display: grid; gap: 10px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.story { font-size: 1rem; }
+.story p { margin: 0 0 6px; }
+.story p:last-child { margin: 0; color: var(--muted); font-size: 0.92rem; }
+svg.scene { display: block; width: 100%; height: auto; max-height: 66vh; margin-inline: auto; border-radius: 10px; }
+.legend { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+.work-col { display: grid; gap: 14px; }
+h2 { margin: 0 0 6px; font-size: 1.15rem; letter-spacing: -0.01em; }
+.hint { margin: 0 0 10px; color: var(--muted); font-size: 0.92rem; }
+.panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; }
+.panel { border: 2px solid var(--frame); border-radius: 10px; overflow: hidden; background: var(--surface); display: flex; flex-direction: column; }
+.pname { display: flex; justify-content: space-between; gap: 8px; padding: 5px 9px; background: var(--chip); font-size: 0.88rem; }
+.pname span { color: var(--muted); }
+svg.pv { display: block; width: 100%; height: auto; }
+svg.pv use.o { cursor: pointer; }
+.pcount { padding: 6px 10px 8px; border-top: 1px solid var(--line); font-size: 0.95rem; }
+.pcount b { font: 700 1.15rem var(--mono); }
+.pedge { margin: 0; padding: 4px 9px; font-size: 0.82rem; background: var(--chip); border-left: 4px solid #e0218a; }
+.seen { opacity: .25; }
+.cnt { display: flex; align-items: center; gap: 8px; padding: 6px 9px 8px; }
+.cnt span { font-size: 0.9rem; color: var(--muted); }
+.num { width: 100%; min-width: 0; font: 700 1.05rem var(--mono); padding: 7px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--input-bg); color: var(--ink); }
+.num.good { border-color: var(--good); background: var(--good-bg); }
+.num.bad { border-color: var(--bad); background: var(--bad-bg); }
+.fb { font-size: 0.86rem; margin: 3px 9px 7px; color: var(--muted); }
+.fb.good { color: var(--good); } .fb.bad { color: var(--bad); }
+.fb b { font-family: var(--mono); }
+
+.calc { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 4px 12px; align-items: center; }
+.row label { font-size: 0.98rem; }
+.row label small { display: block; color: var(--muted); font-size: 0.82rem; }
+.row .fb { grid-column: 1 / -1; margin: 0; }
+.given { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; background: var(--chip); border-radius: 10px; font-size: 0.98rem; }
+.given b { font-family: var(--mono); }
+.calcbox { border: 1px solid var(--line); border-radius: 10px; background: var(--chip); margin: 0 0 12px; }
+.calcbox summary { padding: 9px 12px; font-weight: 700; cursor: pointer; }
+.calcbody { padding: 0 12px 12px; max-width: 290px; }
+.cexpr { width: 100%; font: 600 1.2rem var(--mono); text-align: right; padding: 8px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--input-bg); color: var(--ink); }
+.cout { min-height: 1.5em; margin: 2px 4px 8px; text-align: right; font: 600 1rem var(--mono); color: var(--muted); }
+.cout.err { color: var(--bad); }
+.ckeys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ck { font: 700 1.15rem var(--mono); min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.ck:active { transform: translateY(1px); }
+.ck.op { color: var(--accent); }
+.ck.eq { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.rule { margin: 0 0 10px; padding: 9px 12px; border-left: 5px solid var(--frame); background: var(--chip); border-radius: 8px; font-size: 0.95rem; }
+.panels.tubes { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
+.msg { margin: 8px 0 0; color: var(--bad); font-weight: 600; min-height: 1.4em; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
+
+.result { display: grid; gap: 6px; }
+.result .r { display: flex; justify-content: space-between; gap: 12px; padding: 7px 12px; border-radius: 10px; background: var(--chip); }
+.result .r b { font-family: var(--mono); }
+.result .r.big { background: var(--accent); color: var(--accent-ink); }
+.lesson ol { margin: 8px 0 0; padding-left: 1.3em; display: grid; gap: 8px; }
+.lesson li b { font-weight: 700; }
+.lesson code, .lesson .calc-line { font-family: var(--mono); font-size: 0.93rem; background: var(--chip); padding: 1px 6px; border-radius: 6px; }
+.lesson p { margin: 10px 0 0; }
+.lesson .why { border-left: 4px solid var(--frame); padding-left: 12px; }
+.mistake { color: var(--bad); }
+
+.tagbar { height: 12px; background: var(--chip); border-radius: 999px; overflow: hidden; margin: 8px 0; }
+.tagbar i { display: block; height: 100%; width: 0; background: var(--frame); transition: width .2s; }
+.tagcount { font: 700 1.5rem var(--mono); }
+.nets { display: grid; gap: 10px; }
+.net { border: 2px dashed var(--accent); border-radius: 10px; padding: 6px; background: var(--input-bg); }
+.net .pname { background: transparent; padding: 2px 4px 6px; }
+.net svg { display: block; width: 100%; height: auto; }
+
+.animal .hit { fill: transparent; }
+.animal .rk, .animal .rg, .animal .cg { display: none; fill: none; }
+.animal.tagged .rk, .animal.tagged .rg { display: block; }
+.rk { stroke: #1b1b1b; stroke-width: 5.2; }
+.rg { stroke: #ffd400; stroke-width: 2.8; }
+.animal.caught .cg { display: block; stroke: #fff; stroke-width: 2; stroke-dasharray: 4 3; }
+@keyframes tagpop { from { stroke-width: 10; opacity: 0; } to { stroke-width: 2.8; opacity: 1; } }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.animal.tagged .rg { animation: tagpop .5s ease-out; }
+.animal.caught .cg { animation: fadein .4s ease-out; }
+@media (prefers-reduced-motion: reduce) { .tagbar i { transition: none; } .animal .rg, .animal .cg { animation: none !important; } }
+
+@media (max-width: 980px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  .scene-col { position: static; }
+  svg.scene { max-height: none; }
+  .row { grid-template-columns: minmax(0, 1fr) 130px; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs id="defs"></defs></svg>
+
+<div class="wrap">
+  <header>
+    <div class="title-block">
+      <h1>Sample &amp; Estimate</h1>
+      <p class="tagline">Count a few. Estimate the whole population.</p>
+    </div>
+    <div class="formula" id="formula" aria-live="polite"></div>
+  </header>
+
+  <section class="controls" aria-label="Choose a problem type">
+    <div class="ctrl">
+      <span class="ctrl-label" id="lblMode">Method</span>
+      <div class="seg" role="group" aria-labelledby="lblMode" id="modeSeg">
+        <button type="button" data-mode="quad" aria-pressed="true">Quadrats</button>
+        <button type="button" data-mode="liquid" aria-pressed="false">Liquid samples</button>
+        <button type="button" data-mode="mark" aria-pressed="false">Mark-recapture</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <span class="ctrl-label" id="lblLevel">Level</span>
+      <div class="seg" role="group" aria-labelledby="lblLevel" id="levelSeg">
+        <button type="button" data-level="easy" aria-pressed="true">Easy</button>
+        <button type="button" data-level="medium" aria-pressed="false">Medium</button>
+        <button type="button" data-level="hard" aria-pressed="false">Hard</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <button type="button" class="btn primary" id="newBtn">New problem</button>
+  </section>
+
+  <main>
+    <section class="scene-col" aria-label="The habitat">
+      <div class="card story" id="story"></div>
+      <div id="scene"></div>
+      <p class="legend" id="legend"></p>
+    </section>
+    <section class="work-col" id="work" aria-label="Worksheet"></section>
+  </main>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const rnd = Math.random;
+const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+const pick = a => a[Math.floor(rnd() * a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const rd = x => Math.round(x * 1e6) / 1e6;
+const r1 = x => Math.round((x + Number.EPSILON) * 10) / 10;
+const f1 = x => r1(x).toFixed(1);
+const trim = (x, d = 3) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d).replace(/\.?0+$/, '');
+const fmtN = x => trim(x, 4);
+const sum = a => a.reduce((s, v) => s + v, 0);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
+const parseNum = s => { const t = String(s).trim(); return /^-?(\d+\.?\d*|\.\d+)$/.test(t) ? parseFloat(t) : NaN; };
+const star = (n, ro, ri_) => { const p = []; for (let i = 0; i < n * 2; i++) { const r = i % 2 ? ri_ : ro, a = Math.PI * i / n - Math.PI / 2; p.push((r * Math.cos(a)).toFixed(2) + ',' + (r * Math.sin(a)).toFixed(2)); } return p.join(' '); };
+
+/* ---------- Species ---------- */
+const SP = {
+  barnacle: 'barnacles', limpet: 'limpets', periwinkle: 'periwinkle snails', mussel: 'mussels', seastar: 'sea stars', anemone: 'sea anemones',
+  poppy: 'poppies', dandelion: 'dandelions',
+  copepod: 'copepods', brineshrimp: 'brine shrimp', daphnia: 'Daphnia (water fleas)', volvox: 'Volvox colonies',
+  reeffish: 'reef fish', crab: 'shore crabs', turtle: 'green sea turtles', trout: 'rainbow trout'
+};
+const HAB = {
+  shore: { name: 'rocky shore', bg: '#8b908c', blobs: ['#7a7f7b', '#9ba19c', '#6d726e'], species: ['barnacle', 'limpet', 'periwinkle', 'mussel', 'seastar', 'anemone'] },
+  meadow: { name: 'meadow', bg: '#7aa65b', blobs: ['#6b9a4e', '#8cb96a', '#5f8c45'], species: ['poppy', 'dandelion'] }
+};
+const WATERS = [
+  { name: 'seawater from a holding tank', short: 'flask', g: ['#dcf1f6', '#5fb0cb'], species: ['copepod', 'brineshrimp'] },
+  { name: 'seawater from a tide pool', short: 'flask', g: ['#cfe6ef', '#5b9fb5'], species: ['copepod', 'brineshrimp'] },
+  { name: 'water from a school pond', short: 'flask', g: ['#e0efd2', '#6aa886'], species: ['daphnia', 'volvox'] }
+];
+const PLACES = [
+  { sp: 'reeffish', name: 'a coral reef', g: ['#2f8fb8', '#0e4a73'], blobs: ['#e8806a', '#f2b705', '#b8e0d2'] },
+  { sp: 'crab', name: 'a mudflat', g: ['#cdbb93', '#a8946a'], blobs: ['#8f7d58', '#d9c9a3'] },
+  { sp: 'turtle', name: 'a coastal lagoon', g: ['#55bab4', '#1f7d86'], blobs: ['#8fd6c8', '#2e9a98'] },
+  { sp: 'trout', name: 'a mountain lake', g: ['#6aa3bd', '#2f6280'], blobs: ['#8dbfd4', '#3f7390'] }
+];
+
+function buildDefs() {
+  let d = '';
+  d += `<g id="o-barnacle"><circle r="8.5" fill="#ece8dc" stroke="#6f6a5c" stroke-width="1.2"/><circle r="4.2" fill="#3f3b33"/><circle r="1.6" fill="#ece8dc"/></g>`;
+  d += `<g id="o-limpet"><ellipse rx="9" ry="7" fill="#cdb98e" stroke="#6b5836" stroke-width="1.2"/><ellipse rx="5" ry="3.6" fill="#a8905f"/></g>`;
+  d += `<g id="o-periwinkle"><circle r="8" fill="#3a3550" stroke="#12101c" stroke-width="1"/><circle r="4.8" fill="none" stroke="#a9a3c9" stroke-width="1.2" stroke-dasharray="20 6"/><circle r="1.9" fill="#a9a3c9"/></g>`;
+  d += `<g id="o-mussel"><path d="M-9 2 Q-9 -6 2 -6 Q10 -5 9 1 Q8 6 -2 6 Q-8 6 -9 2Z" fill="#1d2d49" stroke="#0b1424" stroke-width="1"/><path d="M-7 1 Q0 -3 8 0" fill="none" stroke="#6f8cb8" stroke-width="1"/></g>`;
+  d += `<g id="o-seastar"><polygon points="${star(5, 10, 4.2)}" fill="#e8743b" stroke="#8a3a12" stroke-width="1"/><circle r="1.6" fill="#f6c28f"/></g>`;
+  d += `<g id="o-anemone">${[0,1,2,3,4,5,6,7].map(i => `<circle cx="${(6.2 * Math.cos(i * Math.PI / 4)).toFixed(2)}" cy="${(6.2 * Math.sin(i * Math.PI / 4)).toFixed(2)}" r="2.6" fill="#46c29a"/>`).join('')}<circle r="4.8" fill="#1d7f5f" stroke="#0e4a38" stroke-width="1"/></g>`;
+  d += `<g id="o-poppy"><circle cx="4.2" r="4.4" fill="#d93a2b"/><circle cx="-4.2" r="4.4" fill="#d93a2b"/><circle cy="4.2" r="4.4" fill="#d93a2b"/><circle cy="-4.2" r="4.4" fill="#d93a2b"/><circle r="2.4" fill="#2a1414"/></g>`;
+  d += `<g id="o-dandelion"><polygon points="${star(12, 9.5, 6)}" fill="#f6d31c" stroke="#b58a00" stroke-width=".8"/><circle r="3" fill="#d49a00"/></g>`;
+  d += `<g id="o-copepod"><ellipse rx="6" ry="3.2" fill="#f1dfa9" stroke="#6f5f2f" stroke-width=".9"/><path d="M5 -1 Q9 -4 10 -8 M5 1 Q9 4 10 8 M-6 0 L-10 -2.5 M-6 0 L-10 2.5" fill="none" stroke="#6f5f2f" stroke-width=".9" stroke-linecap="round"/><circle cx="3" cy="-.6" r=".8" fill="#222"/></g>`;
+  d += `<g id="o-brineshrimp"><path d="M-8 3 Q-6 -5 0 -3 Q6 -1 8 -6" fill="none" stroke="#f0a58c" stroke-width="3.4" stroke-linecap="round"/><circle cx="8" cy="-6" r="1.7" fill="#222"/></g>`;
+  d += `<g id="o-daphnia"><circle r="6.2" fill="#d6efb2" stroke="#4f6f2c" stroke-width="1"/><circle cx="-3" cy="-1" r="1.4" fill="#111"/><path d="M-6 -2 Q-10 -6 -9 -9.5" fill="none" stroke="#4f6f2c" stroke-width="1" stroke-linecap="round"/><path d="M6 1 L9.5 2.5" stroke="#4f6f2c" stroke-width="1" stroke-linecap="round"/></g>`;
+  d += `<g id="o-volvox"><circle r="7.4" fill="rgba(70,180,100,.55)" stroke="#1f7a3a" stroke-width="1.1"/>${[[-3,-3],[3,-2],[0,3],[-4,2],[4,3],[0,-5]].map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="1.3" fill="#1f7a3a"/>`).join('')}</g>`;
+  d += `<g id="o-reeffish"><ellipse cx="-1" rx="8" ry="5" fill="#ff9a3c" stroke="#a34a00" stroke-width="1"/><polygon points="6,0 10.5,-5 10.5,5" fill="#ff9a3c" stroke="#a34a00" stroke-width="1"/><path d="M-1 -4.6 V4.6" stroke="#fff" stroke-width="1.8"/><circle cx="-5" cy="-1.2" r="1" fill="#111"/></g>`;
+  d += `<g id="o-trout"><ellipse cx="-1" rx="8.4" ry="4.4" fill="#a7bb93" stroke="#4d6340" stroke-width="1"/><polygon points="6.5,0 10.5,-4.5 10.5,4.5" fill="#a7bb93" stroke="#4d6340" stroke-width="1"/><path d="M-5 .6 H6" stroke="#e07a7a" stroke-width="1.6"/><circle cx="-5.6" cy="-1" r="1" fill="#111"/><circle cx="0" cy="-2" r=".6" fill="#3b4a30"/><circle cx="3" cy="-1.6" r=".6" fill="#3b4a30"/></g>`;
+  d += `<g id="o-crab"><path d="M-7 -1 L-10.5 -4 M-7 2 L-10.5 5 M7 -1 L10.5 -4 M7 2 L10.5 5 M-6 4 L-8 7.5 M6 4 L8 7.5" stroke="#7d2113" stroke-width="1.2" fill="none" stroke-linecap="round"/><ellipse rx="7" ry="5" fill="#e0553b" stroke="#7d2113" stroke-width="1"/><circle cx="-5" cy="-6.2" r="2.6" fill="#e0553b" stroke="#7d2113" stroke-width="1"/><circle cx="5" cy="-6.2" r="2.6" fill="#e0553b" stroke="#7d2113" stroke-width="1"/><circle cx="-2" cy="-4.8" r=".9" fill="#111"/><circle cx="2" cy="-4.8" r=".9" fill="#111"/></g>`;
+  d += `<g id="o-turtle"><ellipse cx="-7.6" cy="-3" rx="3.8" ry="1.8" transform="rotate(-30 -7.6 -3)" fill="#8aa551" stroke="#2c4012" stroke-width=".8"/><ellipse cx="7.6" cy="-3" rx="3.8" ry="1.8" transform="rotate(30 7.6 -3)" fill="#8aa551" stroke="#2c4012" stroke-width=".8"/><ellipse cx="-6" cy="6" rx="2.8" ry="1.5" transform="rotate(40 -6 6)" fill="#8aa551" stroke="#2c4012" stroke-width=".8"/><ellipse cx="6" cy="6" rx="2.8" ry="1.5" transform="rotate(-40 6 6)" fill="#8aa551" stroke="#2c4012" stroke-width=".8"/><circle cy="-9" r="2.6" fill="#8aa551" stroke="#2c4012" stroke-width=".8"/><ellipse rx="7" ry="8" fill="#6d8f3a" stroke="#2c4012" stroke-width="1"/><path d="M-3 -3 L3 -3 L5 2 L0 5 L-5 2Z" fill="none" stroke="#2c4012" stroke-width=".8"/></g>`;
+  WATERS.forEach((w, i) => { d += `<linearGradient id="g-w${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${w.g[0]}"/><stop offset="1" stop-color="${w.g[1]}"/></linearGradient>`; });
+  PLACES.forEach((w, i) => { d += `<linearGradient id="g-p${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${w.g[0]}"/><stop offset="1" stop-color="${w.g[1]}"/></linearGradient>`; });
+  $('#defs').innerHTML = d;
+}
+
+/* ---------- Level settings ---------- */
+const CFG = {
+  quad: {
+    easy:   { cols: 10, rows: 10, cell: 1, unit: 'm²', shapes: [[1,1]], k: [4,7], N: [250,500], step: 10, minCells: 4, minN: 8, lab: (w,h) => `${w} m × ${h} m`, leg: 'Each grid square is 1 m × 1 m.' },
+    medium: { cols: 12, rows: 10, cell: 1, unit: 'm²', shapes: [[1,1],[2,2]], k: [4,6], N: [300,600], step: 1, minCells: 7, minN: 15, lab: (w,h) => `${w} m × ${h} m`, leg: 'Each grid square is 1 m × 1 m.' },
+    hard:   { cols: 16, rows: 12, cell: 0.25, unit: 'm²', shapes: [[2,1],[2,2]], k: [5,8], N: [240,520], step: 1, minCells: 10, minN: 20, lab: (w,h) => `${w * 50} cm × ${h * 50} cm`, leg: 'Each grid square is 50 cm × 50 cm.', conv: true }
+  },
+  liquid: {
+    easy:   { unit: 'mL', Alist: [2000, 3000, 4000, 5000, 6000], k: [3, 5], vols: [50, 100, 150, 200], same: true, cmax: [10, 20], Nround: 10, minN: 25 },
+    medium: { unit: 'mL', Ar: [3000, 9000], Astep: 100, k: [4, 6], vols: [50, 75, 100, 125, 150, 200, 250], sizes: 3, minDistinct: 2, cmax: [10, 20], minN: 30 },
+    hard:   { unit: 'mL', Ar: [8000, 12000], Astep: 50, k: [6, 8], vols: [25, 40, 60, 75, 80, 120, 150, 180, 250, 300], sizes: 5, minDistinct: 3, cmax: [7, 14], minN: 40 }
+  },
+  mark: {
+    easy:   { Nlist: [300, 400, 500, 600], Mlist: [50], nlist: [50, 60], nets: 1, K: 70, em: [3.5, 12], minM: 3 },
+    medium: { N: [500, 1500], M: [60, 150], n: [60, 150], nets: 1, K: 90, em: [4, 12], minM: 3 },
+    hard:   { N: [1500, 5000], M: [100, 300], n: [40, 90], nets: 3, K: 110, em: [5, 15], minM: 4 }
+  }
+};
+const LEVEL_NOTE = {
+  quad:   { easy: 'Same-size quadrats, whole numbers.', medium: 'Quadrats come in two sizes.', hard: 'Sizes are in cm, the total area is in m². Convert before you calculate.' },
+  liquid: { easy: 'Same-size tubes. Everything is in mL.', medium: 'Tubes come in a few sizes. Everything is in mL.', hard: 'Six to eight tubes in different sizes, and a big flask.' },
+  mark:   { easy: 'One recapture, round numbers.', medium: 'One recapture, less tidy numbers.', hard: 'Three nets, big population. Add the nets up first.' }
+};
+
+/* ---------- Geometry helpers ---------- */
+function scatter(N, x0, y0, x1, y1, dmin, reject) {
+  for (let pass = 0; pass < 6; pass++) {
+    const pts = [], grid = new Map(), cs = dmin;
+    let tries = 0; const maxTries = N * 500;
+    while (pts.length < N && tries < maxTries) {
+      tries++;
+      const x = x0 + rnd() * (x1 - x0), y = y0 + rnd() * (y1 - y0);
+      if (reject && reject(x, y)) continue;
+      const gx = Math.floor((x - x0) / cs), gy = Math.floor((y - y0) / cs);
+      let ok = true;
+      for (let i = gx - 1; i <= gx + 1 && ok; i++) for (let j = gy - 1; j <= gy + 1 && ok; j++) {
+        const arr = grid.get(i + ',' + j); if (!arr) continue;
+        for (const q of arr) if ((q.x - x) ** 2 + (q.y - y) ** 2 < dmin * dmin) { ok = false; break; }
+      }
+      if (!ok) continue;
+      const p = { x, y }; pts.push(p);
+      const key = gx + ',' + gy; if (!grid.has(key)) grid.set(key, []); grid.get(key).push(p);
+    }
+    if (pts.length >= N) return pts;
+    dmin *= 0.9;
+  }
+  return null;
+}
+const overlap = (a, b, g) => a.x < b.x + b.w + g && b.x < a.x + a.w + g && a.y < b.y + b.h + g && b.y < a.y + a.h + g;
+
+function layout(cfg) {
+  const cap = Math.floor(cfg.cols * cfg.rows * 0.10);
+  let last = [];
+  for (let attempt = 0; attempt < 600; attempt++) {
+    const k = ri(cfg.k[0], cfg.k[1]);
+    const placed = []; let cells = 0, ok = true;
+    for (let i = 0; i < k; i++) {
+      let done = false;
+      for (let t = 0; t < 80 && !done; t++) {
+        const s = pick(cfg.shapes);
+        let w = s[0], h = s[1];
+        if (w !== h && rnd() < 0.5) { const tmp = w; w = h; h = tmp; }
+        if (cells + w * h > cap) continue;
+        const r = { x: ri(0, cfg.cols - w), y: ri(0, cfg.rows - h), w, h };
+        if (placed.some(p => overlap(p, r, 1))) continue;
+        placed.push(r); cells += w * h; done = true;
+      }
+      if (!done) { ok = false; break; }
+    }
+    last = placed;
+    if (ok && cells >= cfg.minCells) { placed.sort((a, b) => a.y - b.y || a.x - b.x); return placed; }
+  }
+  last.sort((a, b) => a.y - b.y || a.x - b.x);
+  return last;
+}
+
+function blobSVG(cols, rows, colors, count, rmin, rmax) {
+  let s = '';
+  for (let i = 0; i < count; i++) {
+    s += `<ellipse cx="${(rnd() * cols).toFixed(2)}" cy="${(rnd() * rows).toFixed(2)}" rx="${(rmin + rnd() * (rmax - rmin)).toFixed(2)}" ry="${(rmin + rnd() * (rmax - rmin)).toFixed(2)}" transform="rotate(${ri(0, 180)} ${(rnd() * cols).toFixed(1)} ${(rnd() * rows).toFixed(1)})" fill="${pick(colors)}" opacity=".5"/>`;
+  }
+  return s;
+}
+
+/* ---------- State ---------- */
+const state = { mode: 'quad', level: 'easy', prob: null };
+
+/* ---------- Edge organisms: rare, deliberate ---------- */
+const RB = 0.155; // body radius used to detect organisms touching a frame edge
+function edgeProcess(orgs, rects) {
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const strad = [];
+  orgs.forEach(o => rects.forEach((r, ri_) => {
+    const cx = clamp(o.x, r.x, r.x + r.w), cy = clamp(o.y, r.y, r.y + r.h);
+    const inside = cx === o.x && cy === o.y;
+    const d = inside ? Math.min(o.x - r.x, r.x + r.w - o.x, o.y - r.y, r.y + r.h - o.y) : Math.hypot(o.x - cx, o.y - cy);
+    if (d < RB) {
+      const ds = [o.x - r.x, r.x + r.w - o.x, o.y - r.y, r.y + r.h - o.y].sort((u, v) => u - v);
+      strad.push({ o, r, ri: ri_, inside, cx, cy, canKeep: !inside || ds[1] >= RB }); // inside + near a corner could be under half in, so never keep those
+    }
+  }));
+  shuffle(strad);
+  const E = rnd() < 0.6 ? 0 : rnd() < 0.75 ? 1 : 2; // mostly 0; about 30% of problems get 1, 10% get 2
+  let kept = 0;
+  strad.forEach(t => {
+    const o = t.o, r = t.r;
+    if (kept < E && t.canKeep) { kept++; o.edge = t.inside ? 'in' : 'out'; o.er = t.ri; return; }
+    const m = RB + 0.02 + rnd() * 0.08; // push clear of the edge, keeping it on the same side
+    if (t.inside) {
+      o.x = Math.max(r.x + m, Math.min(r.x + r.w - m, o.x));
+      o.y = Math.max(r.y + m, Math.min(r.y + r.h - m, o.y));
+    } else {
+      const vx = o.x - t.cx, vy = o.y - t.cy, L = Math.hypot(vx, vy) || 1;
+      o.x = t.cx + vx / L * m; o.y = t.cy + vy / L * m;
+    }
+  });
+}
+
+/* ---------- Problem builders (quadrats + liquids) ---------- */
+function buildGrid() {
+  const cfg = CFG[state.mode][state.level];
+  const isQ = state.mode === 'quad';
+  let hab, spKey, waterIdx = -1;
+  if (isQ) { const key = rnd() < 0.75 ? 'shore' : 'meadow'; hab = HAB[key]; spKey = pick(hab.species); }
+  else { waterIdx = ri(0, WATERS.length - 1); hab = WATERS[waterIdx]; spKey = pick(hab.species); }
+  const A = rd(cfg.cols * cfg.rows * cfg.cell);
+
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const rects = layout(cfg);
+    let N = ri(cfg.N[0], cfg.N[1]); if (cfg.step > 1) N = Math.round(N / cfg.step) * cfg.step;
+    const R = RB;
+    const pts = scatter(N, R, R, cfg.cols - R, cfg.rows - R, 0.28, null);
+    if (!pts) continue;
+    const orgs = pts.map(p => ({ x: p.x, y: p.y, rot: ri(0, 359), s: (0.0135 * (0.92 + rnd() * 0.2)), sp: spKey }));
+    edgeProcess(orgs, rects);
+    const counts = rects.map(r => orgs.filter(o => o.x >= r.x && o.x < r.x + r.w && o.y >= r.y && o.y < r.y + r.h).length);
+    const edges = rects.map((_, i) => ({ in: orgs.filter(o => o.edge === 'in' && o.er === i).length, out: orgs.filter(o => o.edge === 'out' && o.er === i).length }));
+    const n = sum(counts);
+    if (n < cfg.minN) continue;
+    const areas = rects.map(r => rd(r.w * r.h * cfg.cell));
+    const a = rd(sum(areas));
+    const bg = isQ
+      ? `<rect width="${cfg.cols}" height="${cfg.rows}" fill="${hab.bg}"/>${blobSVG(cfg.cols, cfg.rows, hab.blobs, Math.round(cfg.cols * cfg.rows * 0.22), 0.4, 1.4)}`
+      : `<rect width="${cfg.cols}" height="${cfg.rows}" fill="url(#g-w${waterIdx})"/>${Array.from({ length: Math.round(cfg.cols * cfg.rows * 0.18) }, () => `<circle cx="${(rnd() * cfg.cols).toFixed(2)}" cy="${(rnd() * cfg.rows).toFixed(2)}" r="${(0.05 + rnd() * 0.14).toFixed(2)}" fill="#fff" opacity=".22"/>`).join('')}`;
+    return { kind: 'grid', cfg, hab, spKey, pl: SP[spKey], A, rects, orgs, counts, edges, n, areas, a, N, bg, k: rects.length, checked: false };
+  }
+  return null;
+}
+
+/* ---------- Liquid: a flask of water, sampled into test tubes (all mL) ---------- */
+const binom = (n, pr) => { let c = 0; for (let i = 0; i < n; i++) if (rnd() < pr) c++; return c; };
+const FLASK = 'M70,10 H130 V90 L188,200 Q196,232 168,236 H32 Q4,232 12,200 L70,90 Z';
+const tubeFill = (v, vmax) => 40 + 150 * v / vmax;
+
+function buildLiquid() {
+  const cfg = CFG.liquid[state.level];
+  const wi = ri(0, WATERS.length - 1), water = WATERS[wi], spKey = pick(water.species);
+  for (let attempt = 0; attempt < 500; attempt++) {
+    let A = cfg.Alist ? pick(cfg.Alist) : Math.round(ri(cfg.Ar[0], cfg.Ar[1]) / cfg.Astep) * cfg.Astep;
+    A = Math.min(A, 12000);
+    const cap = Math.floor(A * 0.10), k = ri(cfg.k[0], cfg.k[1]);
+    let vs;
+    if (cfg.same) { const v = pick(cfg.vols); vs = Array(k).fill(v); }
+    else { const set = shuffle(cfg.vols.slice()).slice(0, cfg.sizes); vs = Array.from({ length: k }, () => pick(set)); if (new Set(vs).size < cfg.minDistinct) continue; }
+    const a = sum(vs);
+    if (a > cap || a < A * 0.04) continue;
+    const vmax = Math.max(...vs);
+    let N = Math.round(ri(cfg.cmax[0], cfg.cmax[1]) * A / vmax);
+    if (cfg.Nround) N = Math.round(N / cfg.Nround) * cfg.Nround;
+    let R = N, V = A;
+    const counts = vs.map(v => { const c = binom(R, v / V); R -= c; V -= v; return c; });
+    const n = sum(counts);
+    if (n < cfg.minN) continue;
+    const tubes = []; let ok = true;
+    for (let i = 0; i < k; i++) {
+      const yf = 205 - tubeFill(vs[i], vmax);
+      const pts = scatter(counts[i], 12, yf + 8, 68, 200, 13.5, (x, y) => y > 170 && (x - 40) ** 2 + (y - 170) ** 2 > 28 ** 2);
+      if (!pts) { ok = false; break; }
+      tubes.push({ v: vs[i], yf, count: counts[i], orgs: pts.map(q => ({ x: q.x, y: q.y, rot: ri(0, 359), s: 0.6 * (0.92 + rnd() * 0.2), sp: spKey })) });
+    }
+    if (!ok) continue;
+    const fp = scatter(28, 24, 135, 176, 226, 15, (x, y) => { const l = y <= 200 ? 70 - 58 * (y - 90) / 110 : 12; return x < l + 11 || x > 200 - l - 11; }) || [];
+    const flask = fp.map(q => ({ x: q.x, y: q.y, rot: ri(0, 359), s: 0.6 * (0.92 + rnd() * 0.2), sp: spKey }));
+    return { kind: 'liquid', cfg, water, wi, spKey, pl: SP[spKey], A, a, N, n, counts, k, tubes, vmax, flask, checked: false };
+  }
+  return null;
+}
+
+function tubeG(t, wi) {
+  return `<g><path d="M5,${t.yf.toFixed(1)} H75 V170 A35,35 0 0 1 5,170 Z" fill="url(#g-w${wi})"/>${t.orgs.map(useTag).join('')}<path d="M0,0 V170 A40,40 0 0 0 80,170 V0" fill="none" stroke="#5b7a85" stroke-width="3" stroke-linecap="round"/><path d="M9,12 V160" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/></g>`;
+}
+
+function sceneLiquid(p) {
+  let s = `<svg class="scene" viewBox="0 0 640 345" role="img" aria-label="A flask holding ${p.A} mL of water and ${p.k} test tubes with samples. Zoomed tubes are in the worksheet.">`;
+  s += `<rect width="640" height="345" fill="#eef3f0"/><rect y="300" width="640" height="45" fill="#cdd7d2"/><rect y="300" width="640" height="3" fill="#aebbb5"/>`;
+  s += `<g transform="translate(12,32)"><clipPath id="flaskclip"><path d="${FLASK}"/></clipPath>`;
+  s += `<rect x="0" y="125" width="200" height="125" fill="url(#g-w${p.wi})" clip-path="url(#flaskclip)"/>${p.flask.map(useTag).join('')}`;
+  s += `<path d="${FLASK}" fill="rgba(255,255,255,.18)" stroke="#5b7a85" stroke-width="3.5" stroke-linejoin="round"/><path d="M62,10 H138" stroke="#5b7a85" stroke-width="5" stroke-linecap="round"/><path d="M130,38 h-12 M130,52 h-7 M130,66 h-12" stroke="#5b7a85" stroke-width="2"/>`;
+  s += `<text x="100" y="268" text-anchor="middle" font-size="20" font-weight="700" fill="#14282a" font-family="system-ui, sans-serif">A = ${p.A} mL</text></g>`;
+  s += `<path d="M222 205 H250 M243 198 L252 205 L243 212" stroke="#14282a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="232" y="190" text-anchor="middle" font-size="11" fill="#14282a" font-family="system-ui, sans-serif">samples</text>`;
+  const slot = 372 / p.k, sc = Math.min(1, (slot - 6) / 80);
+  p.tubes.forEach((t, i) => {
+    const tx = 264 + i * slot + (slot - 80 * sc) / 2, ty = 300 - 214 * sc, cx = tx + 40 * sc;
+    s += `<g transform="translate(${tx.toFixed(1)} ${ty.toFixed(1)}) scale(${sc.toFixed(3)})">${tubeG(t, p.wi)}</g>`;
+    s += `<text x="${cx.toFixed(1)}" y="318" text-anchor="middle" font-size="13" font-weight="700" fill="#14282a" font-family="system-ui, sans-serif">T${i + 1}</text><text x="${cx.toFixed(1)}" y="334" text-anchor="middle" font-size="12" fill="#14282a" font-family="system-ui, sans-serif">${t.v} mL</text>`;
+  });
+  return s + '</svg>';
+}
+
+function storyLiquid(p) {
+  return `<p>A flask holds <b>${p.A} mL</b> of ${p.water.name}, mixed well. ${p.k} test tubes were filled from it, and together they hold no more than 10% of the water.</p>
+    <p>Each test tube shows how many ${esc(p.pl)} were counted in it. Add the counts, then estimate how many are in the whole flask.</p>`;
+}
+
+function liquidWork(p) {
+  const panels = p.tubes.map((t, i) => `
+    <div class="panel">
+      <div class="pname"><b>T${i + 1}</b><span>${t.v} mL</span></div>
+      <svg class="pv tv" viewBox="0 0 80 214" role="img" aria-label="Test tube T${i + 1}, ${t.v} mL">${tubeG(t, p.wi)}</svg>
+      <div class="pcount">Count: <b>${t.count}</b></div>
+    </div>`).join('');
+  return `
+  <div class="card">
+    <h2>Step 1: Read the counts</h2>
+    <p class="hint">Each test tube shows how many ${esc(p.pl)} were counted in it. Add the counts up to get n.</p>
+    <div class="panels tubes">${panels}</div>
+  </div>
+  <div class="card">
+    <h2>Step 2: Calculate</h2>
+    ${ruleHTML()}
+    ${calcHTML()}
+    <div class="calc">
+      <div class="given"><span>A = total volume in the flask (given)</span><b>${p.A} mL</b></div>
+      <div class="row"><label for="fa">a = total volume sampled<small>Add up all the test tubes. Unit: mL</small></label><input class="num" id="fa" inputmode="decimal" autocomplete="off"><div class="fb" id="ffa"></div></div>
+      <div class="row"><label for="fn">n = total number counted<small>Add the counts from every test tube</small></label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
+      <div class="row"><label for="fN">N = (A / a) × n<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
+    </div>
+    <p class="msg" id="msg" role="alert"></p>
+    <div class="actions"><button type="button" class="btn primary" id="checkBtn">Check my work</button></div>
+  </div>
+  <div id="after"></div>`;
+}
+
+function lessonLiquid(p, Ncorr, err) {
+  const ratio = p.A / p.a;
+  let steps = '';
+  steps += `<li><b>Read each test tube's count.</b> ${p.counts.map((c, i) => `T${i + 1} = ${c}`).join(', ')}.</li>`;
+  steps += `<li><b>Add the counts.</b> <span class="calc-line">n = ${p.counts.join(' + ')} = ${p.n}</span></li>`;
+  steps += `<li><b>Add the volume sampled.</b> <span class="calc-line">a = ${p.tubes.map(t => t.v).join(' + ')} = ${p.a} mL</span></li>`;
+  steps += `<li><b>Scale up.</b> <span class="calc-line">A ÷ a = ${p.A} ÷ ${p.a} ${Math.abs(ratio - Math.round(ratio * 1000) / 1000) > 1e-9 ? '≈' : '='} ${trim(ratio, 3)}</span>. The flask holds about ${trim(ratio, 1)} times more water than you sampled.</li>`;
+  steps += `<li><b>Multiply by n.</b> <span class="calc-line">N = (${p.A} ÷ ${p.a}) × ${p.n} = ${f1(Ncorr)}</span>. Keep the full calculator number and round only the final answer to 1 decimal place.</li>`;
+  return `<div class="card lesson">
+    <h2>How to get the correct answer</h2>
+    <ol>${steps}</ol>
+    <p class="why">${err < 5 ? 'Very close' : err < 15 ? 'Close' : 'Noticeably off'}: the estimate is ${trim(err, 1)}% from the real ${p.N}. It isn't exact because the tubes caught a few more or fewer organisms than average. Sampling a larger share of the water usually gets you closer.</p>
+    <div class="actions" style="margin-top:12px"><button type="button" class="btn primary" id="nextBtn">Next problem</button></div>
+  </div>`;
+}
+
+function ruleHTML() {
+  return `<div class="rule"><b>Rounding rule:</b> round your final answer N to <b>1 decimal place</b> (like 245.0). Keep the full number in your calculator and round only at the very end.</div>`;
+}
+
+function storyGrid(p) {
+  const { cfg, pl, A, k } = p;
+  if (state.mode === 'quad') {
+    return `<p>${cap1(p.hab.name === 'meadow' ? 'a meadow' : 'a rocky shore')} covers <b>${fmtN(A)} m²</b>. ${k} quadrats were placed at random spots, and together they never cover more than 10% of it.</p>
+      <p>Each quadrat shows how many ${esc(pl)} were counted in it. Add the counts, then estimate how many live on the whole ${p.hab.name}.${cfg.conv ? ' Quadrat sizes are in cm and A is in m², so convert before you calculate.' : ''}</p>`;
+  }
+  return `<p>${cap1(p.hab.name)} holds <b>${fmtN(A)} L</b> of water. ${k} dips were taken from random spots, and together they never take more than 10% of the water.</p>
+    <p>Count the ${esc(pl)} in each dip, then estimate how many are in the whole ${p.hab.short}.${cfg.conv ? ' Dip sizes are in mL and A is in L, so convert before you calculate.' : ''}</p>`;
+}
+
+const useTag = o => `<use class="o" href="#o-${o.sp}" transform="translate(${o.x.toFixed(3)} ${o.y.toFixed(3)}) rotate(${o.rot}) scale(${o.s.toFixed(4)})"/>`;
+const ringTag = o => `<circle cx="${o.x.toFixed(3)}" cy="${o.y.toFixed(3)}" r=".22" fill="none" stroke="#e0218a" stroke-width=".05" pointer-events="none"/>`;
+const pre = () => state.mode === 'quad' ? 'Q' : 'D';
+
+function sceneGrid(p) {
+  const { cols, rows } = p.cfg;
+  let s = `<svg class="scene" viewBox="0 0 ${cols} ${rows}" role="img" aria-label="Habitat with ${p.k} sample frames. Zoomed views are in the worksheet.">`;
+  s += p.bg;
+  let g = ''; for (let i = 1; i < cols; i++) g += `M${i} 0V${rows}`; for (let j = 1; j < rows; j++) g += `M0 ${j}H${cols}`;
+  s += `<path d="${g}" stroke="#fff" stroke-opacity=".28" stroke-width=".02" fill="none"/>`;
+  s += p.orgs.map(useTag).join('');
+  s += p.orgs.filter(o => o.edge === 'in').map(ringTag).join('');
+  p.rects.forEach((r, i) => {
+    s += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#ffc400" fill-opacity=".10" stroke="#ffc400" stroke-width=".08"/>`;
+    const ly = r.y >= 0.5 ? r.y - 0.5 : r.y + r.h;
+    s += `<rect x="${r.x}" y="${ly}" width=".78" height=".5" rx=".08" fill="#14282a" opacity=".9"/><text x="${r.x + 0.39}" y="${ly + 0.36}" font-size=".34" font-weight="700" fill="#fff" text-anchor="middle" font-family="system-ui, sans-serif">${pre()}${i + 1}</text>`;
+  });
+  return s + '</svg>';
+}
+
+function panelSVG(p, r, i) {
+  const near = p.orgs.filter(o => o.x > r.x - RB && o.x < r.x + r.w + RB && o.y > r.y - RB && o.y < r.y + r.h + RB);
+  const rings = near.filter(o => o.edge === 'in' && o.er === i).map(ringTag).join('');
+  return `<svg class="pv" viewBox="${r.x} ${r.y} ${r.w} ${r.h}" role="img" aria-label="Zoomed view of ${pre()}${i + 1}">${p.bg}${near.map(useTag).join('')}${rings}</svg>`;
+}
+
+function edgeNote(p, i) {
+  const e = p.edges[i]; if (!e.in && !e.out) return '';
+  const parts = [];
+  if (e.in) parts.push(`${e.in} pink-ringed ${e.in > 1 ? 'organisms are' : 'organism is'} at least half inside, so ${e.in > 1 ? 'they are' : 'it is'} in the count.`);
+  if (e.out) parts.push(`${e.out} cut-off ${e.out > 1 ? 'organisms are' : 'organism is'} less than half inside, so ${e.out > 1 ? 'they are' : 'it is'} not in the count.`);
+  return `<p class="pedge">Edge: ${parts.join(' ')}</p>`;
+}
+function gridWork(p) {
+  const thing = state.mode === 'quad' ? 'quadrat' : 'dip';
+  const aWord = state.mode === 'quad' ? 'area' : 'volume';
+  const panels = p.rects.map((r, i) => `
+    <div class="panel">
+      <div class="pname"><b>${pre()}${i + 1}</b><span>${p.cfg.lab(r.w, r.h)}</span></div>
+      ${panelSVG(p, r, i)}
+      <div class="pcount">Count: <b>${p.counts[i]}</b></div>
+      ${edgeNote(p, i)}
+    </div>`).join('');
+  return `
+  <div class="card">
+    <h2>Step 1: Read the counts</h2>
+    <p class="hint">Each ${thing} shows how many ${esc(p.pl)} were counted in it. Add the counts up to get n. Edge rule used: an organism at least half inside the frame is counted (pink ring). Less than half is not.</p>
+    <div class="panels" id="panels">${panels}</div>
+  </div>
+  <div class="card">
+    <h2>Step 2: Calculate</h2>
+    ${ruleHTML()}
+    ${calcHTML()}
+    <div class="calc">
+      <div class="given"><span>A = total ${aWord} (given)</span><b>${fmtN(p.A)} ${p.cfg.unit}</b></div>
+      <div class="row"><label for="fa">a = total ${aWord} sampled<small>Add up all the ${thing}s. Unit: ${p.cfg.unit}</small></label><input class="num" id="fa" inputmode="decimal" autocomplete="off"><div class="fb" id="ffa"></div></div>
+      <div class="row"><label for="fn">n = total number counted<small>Add the counts from every ${thing}</small></label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
+      <div class="row"><label for="fN">N = (A / a) × n<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
+    </div>
+    <p class="msg" id="msg" role="alert"></p>
+    <div class="actions"><button type="button" class="btn primary" id="checkBtn">Check my work</button></div>
+  </div>
+  <div id="after"></div>`;
+}
+
+/* ---------- Checking (quadrats + liquids) ---------- */
+function setField(inp, fbId, ok, html) {
+  inp.classList.remove('good', 'bad'); inp.classList.add(ok ? 'good' : 'bad');
+  const fb = $('#' + fbId); fb.className = 'fb ' + (ok ? 'good' : 'bad'); fb.innerHTML = html;
+}
+function lockInputs() { document.querySelectorAll('#work input').forEach(i => { i.readOnly = true; }); }
+
+function checkGrid() {
+  const p = state.prob; if (p.checked) return;
+  const ids = ['fa', 'fn', 'fN'];
+  const vals = ids.map(id => parseNum($('#' + id).value));
+  const bad = ids.findIndex((id, i) => Number.isNaN(vals[i]) || (id === 'fn' && (!Number.isInteger(vals[i]) || vals[i] < 0)));
+  if (bad >= 0) {
+    $('#msg').textContent = Number.isNaN(vals[bad]) ? 'Fill in every box with a number first.' : 'n must be a whole number.';
+    $('#' + ids[bad]).focus(); return;
+  }
+  $('#msg').textContent = '';
+  p.checked = true;
+  const [a, n, Nv] = vals;
+  let score = 0; const total = 3, unit = p.cfg.unit;
+  const aOk = Math.abs(a - p.a) < 0.0501; if (aOk) score++;
+  setField($('#fa'), 'ffa', aOk, aOk ? '✓ Correct' : `✗ a is <b>${fmtN(p.a)} ${unit}</b>`);
+  const nOk = n === p.n; if (nOk) score++;
+  setField($('#fn'), 'ffn', nOk, nOk ? '✓ Correct' : `✗ The total is <b>${p.n}</b>`);
+  const Nexp = a > 0 ? r1(p.A / a * n) : null;
+  let nHtml, NOk = false;
+  if (Nexp === null) nHtml = '✗ a can\'t be 0';
+  else if (Math.abs(Nv - Nexp) < 0.0501) { NOk = true; nHtml = '✓ Correct'; }
+  else if (Math.abs(Nv - Nexp) <= 0.1001) nHtml = `✗ Close. Check your rounding: using your a and n, N = <b>${f1(Nexp)}</b>`;
+  else nHtml = `✗ Using your a and n, N = <b>${f1(Nexp)}</b>`;
+  if (NOk) score++;
+  setField($('#fN'), 'ffN', NOk, nHtml);
+  lockInputs();
+  const Ncorr = r1(p.A / p.a * p.n);
+  const err = Math.abs(Ncorr - p.N) / p.N * 100;
+  $('#after').innerHTML = resultCard(score, total, Nv, Ncorr, p.N, err, 'Real population') + (p.kind === 'liquid' ? lessonLiquid : lessonGrid)(p, Ncorr, err);
+  $('#checkBtn').disabled = true;
+  $('#after').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+}
+
+function resultCard(score, total, mine, corr, real, err, realLabel) {
+  const same = Math.abs(mine - corr) < 0.0501;
+  return `<div class="card result">
+    <h2>${score} of ${total} boxes right</h2>
+    <div class="r"><span>Your N</span><b>${Number.isFinite(mine) ? f1(mine) : '—'}</b></div>
+    ${same ? '' : `<div class="r"><span>N from the correct counts</span><b>${f1(corr)}</b></div>`}
+    <div class="r big"><span>${realLabel}</span><b>${real}</b></div>
+    <div class="r"><span>Estimate vs. real</span><b>${trim(err, 1)}% off</b></div>
+  </div>`;
+}
+
+function edgeLesson(p) {
+  const bits = [];
+  p.edges.forEach((e, i) => {
+    if (e.in) bits.push(`${pre()}${i + 1} had ${e.in} on the edge with half or more inside, so ${e.in > 1 ? 'they count' : 'it counts'}`);
+    if (e.out) bits.push(`${pre()}${i + 1} had ${e.out} on the edge with less than half inside, so ${e.out > 1 ? 'they don\'t' : 'it doesn\'t'}`);
+  });
+  return bits.length ? ` Edge rule: ${bits.join('; ')}.` : '';
+}
+function lessonGrid(p, Ncorr, err) {
+  const isQ = state.mode === 'quad', P = pre(), thing = isQ ? 'quadrat' : 'dip', unit = p.cfg.unit;
+  const whole = isQ ? p.hab.name : p.hab.short;
+  let steps = '';
+  steps += `<li><b>Read each ${thing}'s count.</b> ${p.rects.map((_, i) => `${P}${i + 1} = ${p.counts[i]}`).join(', ')}.${edgeLesson(p)}</li>`;
+  steps += `<li><b>Add the counts.</b> <span class="calc-line">n = ${p.counts.join(' + ')} = ${p.n}</span></li>`;
+  if (p.cfg.conv) {
+    const lines = p.rects.map((r, i) => isQ
+      ? `${P}${i + 1}: ${p.cfg.lab(r.w, r.h)} = ${fmtN(r.w * 50 * r.h * 50)} cm² = ${fmtN(p.areas[i])} m²`
+      : `${P}${i + 1}: ${r.w * r.h * 200} mL = ${fmtN(p.areas[i])} L`).join('<br>');
+    steps += `<li><b>Convert to the same unit as A.</b> ${isQ ? '1 m² = 10,000 cm².' : '1 L = 1,000 mL.'}<br>${lines}</li>`;
+  }
+  steps += `<li><b>Add the ${isQ ? 'area' : 'volume'} sampled.</b> <span class="calc-line">a = ${p.areas.map(fmtN).join(' + ')} = ${fmtN(p.a)} ${unit}</span></li>`;
+  const ratio = p.A / p.a;
+  steps += `<li><b>Scale up.</b> <span class="calc-line">A ÷ a = ${fmtN(p.A)} ÷ ${fmtN(p.a)} ${Math.abs(ratio - Math.round(ratio * 1000) / 1000) > 1e-9 ? '≈' : '='} ${trim(ratio, 3)}</span>. The whole ${whole} is about ${trim(ratio, 1)} times bigger than the part you sampled.</li>`;
+  steps += `<li><b>Multiply by n.</b> <span class="calc-line">N = (${fmtN(p.A)} ÷ ${fmtN(p.a)}) × ${p.n} = ${f1(Ncorr)}</span>. Keep the full calculator number and round only the final answer to 1 decimal place.</li>`;
+  return `<div class="card lesson">
+    <h2>How to get the correct answer</h2>
+    <ol>${steps}</ol>
+    <p class="why">${err < 5 ? 'Very close' : err < 15 ? 'Close' : 'Noticeably off'}: the estimate is ${trim(err, 1)}% from the real ${p.N}. It isn't exact because the ${thing}s landed on random spots, and some had a few more or fewer than average. Sampling a larger share of the ${isQ ? 'area' : 'water'} usually gets you closer.</p>
+    <div class="actions" style="margin-top:12px"><button type="button" class="btn primary" id="nextBtn">Next problem</button></div>
+  </div>`;
+}
+
+/* ---------- Mark-recapture ---------- */
+const W = 640, H = 400;
+function buildMark() {
+  const cfg = CFG.mark[state.level];
+  const pi = ri(0, PLACES.length - 1), place = PLACES[pi];
+  let N, M, netSizes;
+  for (let t = 0; t < 500; t++) {
+    N = cfg.Nlist ? pick(cfg.Nlist) : ri(cfg.N[0], cfg.N[1]);
+    M = cfg.Mlist ? pick(cfg.Mlist) : ri(cfg.M[0], cfg.M[1]);
+    netSizes = cfg.nets > 1 ? Array.from({ length: cfg.nets }, () => ri(cfg.n[0], cfg.n[1])) : [cfg.nlist ? pick(cfg.nlist) : ri(cfg.n[0], cfg.n[1])];
+    const em = M * sum(netSizes) / N;
+    if (em >= cfg.em[0] && em <= cfg.em[1]) break;
+  }
+  const pop = Array.from({ length: N }, (_, i) => ({ id: i, tagged: false, rot: (i * 137) % 360 }));
+  const vis1 = shuffle(pop.slice()).slice(0, cfg.K);
+  const pts = scatter(cfg.K, 18, 18, W - 18, H - 18, 24, null);
+  vis1.forEach((a, i) => { a.x = pts[i].x; a.y = pts[i].y; a.rot = ri(0, 359); });
+  const bg = `<rect width="${W}" height="${H}" fill="url(#g-p${pi})"/>${blobSVG(W, H, place.blobs, 26, 14, 50)}`;
+  return { kind: 'mark', cfg, place, pi, N, M, pop, vis1, active: vis1.slice(), bg, phase: 'tag', marked: false, tagCount: 0, netSizes, nets: null, checked: false };
+}
+
+const animalHTML = (a, sp) => `<g class="animal${a.tagged ? ' tagged' : ''}" style="transform:translate(${a.x.toFixed(1)}px,${a.y.toFixed(1)}px)"><g transform="rotate(${a.rot} ) scale(1.35)"><use href="#o-${sp}"/></g><circle class="rk" r="13.5"/><circle class="rg" r="13.5"/></g>`;
+
+function sceneMark(p) {
+  const sp = p.place.sp;
+  return `<svg class="scene" id="mscene" viewBox="0 0 ${W} ${H}" role="img" aria-label="Part of ${esc(p.place.name)} with ${esc(SP[sp])}. The habitat continues off screen.">${p.bg}${p.vis1.map(a => animalHTML(a, sp)).join('')}</svg>`;
+}
+
+function storyMark(p) {
+  const pl = SP[p.place.sp];
+  return `<p>A research team studies <b>${esc(pl)}</b> in ${esc(p.place.name)}. The habitat is much bigger than the part you can see, and nobody knows how many animals there are.</p>
+    <p>Day 1: catch and tag <b>${p.M}</b> animals. Day 2: after the tagged animals mix back in, the team sets nets across the whole habitat and counts how many tagged animals they catch.</p>`;
+}
+
+function markWork(p) {
+  return `<div class="card" id="tagCard">
+    <h2>Step 1: Tag ${p.M} animals</h2>
+    <p class="hint">Press Mark. The team catches ${p.M} animals from the whole habitat and tags them (yellow ring). You only see part of the habitat, so some tagged animals are out of view. Then release them.</p>
+    <div class="tagcount" id="tagCount">0 / ${p.M}</div>
+    <div class="tagbar"><i id="tagFill"></i></div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="markBtn">Mark ${p.M} animals</button>
+      <button type="button" class="btn" id="releaseBtn" disabled>Release and recapture</button>
+    </div>
+  </div>
+  <div id="recap"></div>`;
+}
+
+function setTag(p, c) {
+  p.tagCount = c;
+  $('#tagCount').textContent = `${c} / ${p.M}`;
+  $('#tagFill').style.width = (c / p.M * 100) + '%';
+  if (c === p.M && p.phase === 'tag') { $('#releaseBtn').disabled = false; $('#releaseBtn').classList.add('primary'); }
+}
+
+/* ---------- Swimming motion ---------- */
+let raf = 0;
+const REDUCE = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FWD = { reeffish: 180, trout: 180, turtle: 90, crab: null }; // rotation that points the animal along its heading
+const easeIO = v => -(Math.cos(Math.PI * v) - 1) / 2;
+const angLerp = (a, b, k) => a + ((((b - a) % 360) + 540) % 360 - 180) * k;
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const offPoint = () => { const side = ri(0, 3), d = 45 + rnd() * 90; return side === 0 ? { x: -d, y: rnd() * H } : side === 1 ? { x: W + d, y: rnd() * H } : side === 2 ? { x: rnd() * W, y: -d } : { x: rnd() * W, y: H + d }; };
+const initMotion = a => { a.ph = rnd() * 6.28; a.w = 0.5 + rnd() * 0.9; a.cr = a.rot; };
+function linkEls(p) { const gs = [...document.querySelectorAll('#mscene .animal')]; p.vis1.forEach((a, i) => { a.g = gs[i]; a.inner = gs[i].firstElementChild; initMotion(a); }); }
+function addEl(p, a) { const svg = $('#mscene'); svg.insertAdjacentHTML('beforeend', animalHTML(a, p.place.sp)); a.g = svg.lastElementChild; a.inner = a.g.firstElementChild; initMotion(a); }
+
+function startMotion(p) {
+  cancelAnimationFrame(raf);
+  linkEls(p);
+  if (REDUCE()) return;
+  const fwd = FWD[p.place.sp];
+  const loop = now => {
+    if (state.prob !== p) return;
+    const an = p.anim;
+    let allDone = !!an;
+    p.active.forEach(a => {
+      let x = a.x, y = a.y, rot = a.cr;
+      if (an && a.path) {
+        const u = clampN((now - an.t0 - a.delay) / a.dur, 0, 1);
+        if (u < 1) allDone = false;
+        const e = easeIO(u), q = 1 - e, [P0, P1, P2, P3] = a.path;
+        x = q*q*q*P0.x + 3*q*q*e*P1.x + 3*q*e*e*P2.x + e*e*e*P3.x;
+        y = q*q*q*P0.y + 3*q*q*e*P1.y + 3*q*e*e*P2.y + e*e*e*P3.y;
+        const dx = 3*q*q*(P1.x-P0.x) + 6*q*e*(P2.x-P1.x) + 3*e*e*(P3.x-P2.x);
+        const dy = 3*q*q*(P1.y-P0.y) + 6*q*e*(P2.y-P1.y) + 3*e*e*(P3.y-P2.y);
+        const wob = Math.sin(u * 22 + a.ph) * 5 * Math.sin(Math.PI * u), L = Math.hypot(dx, dy) || 1;
+        x += -dy / L * wob; y += dx / L * wob;
+        if (fwd !== null && u > 0 && u < 1) a.cr = angLerp(a.cr, Math.atan2(dy, dx) * 180 / Math.PI + fwd, 0.18);
+        rot = a.cr;
+      } else {
+        const t = now / 1000;
+        x += Math.sin(t * a.w + a.ph) * 2.6; y += Math.cos(t * a.w * 0.8 + a.ph) * 2.6;
+        rot = a.cr + Math.sin(t * a.w * 1.3 + a.ph) * 7;
+      }
+      a.g.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+      a.inner.setAttribute('transform', `rotate(${rot.toFixed(1)}) scale(1.35)`);
+    });
+    if (an && allDone) { p.anim = null; an.onDone(); }
+    raf = requestAnimationFrame(loop);
+  };
+  raf = requestAnimationFrame(loop);
+}
+
+function markAnimals(p) {
+  if (p.phase !== 'tag' || p.marked) return;
+  p.marked = true;
+  const inV = new Set(p.vis1);
+  shuffle(p.pop.slice()).slice(0, p.M).forEach(a => { a.tagged = true; });
+  let vt = p.vis1.filter(a => a.tagged);
+  while (vt.length < 3) { // make sure a few tagged animals are on screen
+    const outT = p.pop.filter(a => a.tagged && !inV.has(a)); if (!outT.length) break;
+    pick(outT).tagged = false; pick(p.vis1.filter(a => !a.tagged)).tagged = true; vt = p.vis1.filter(a => a.tagged);
+  }
+  $('#markBtn').disabled = true;
+  const reduce = REDUCE(), J = Math.min(p.M, 30), per = Math.ceil(vt.length / J);
+  let popped = 0;
+  for (let k = 1; k <= J; k++) {
+    const go = () => {
+      if (state.prob !== p) return;
+      setTag(p, k === J ? p.M : Math.round(p.M * k / J));
+      const upto = Math.min(vt.length, per * k);
+      for (; popped < upto; popped++) vt[popped].g.classList.add('tagged');
+    };
+    if (reduce) go(); else setTimeout(go, k * 2600 / J);
+  }
+}
+
+function release(p) {
+  if (p.phase !== 'tag' || !p.marked || p.tagCount !== p.M) return;
+  p.phase = 'recap';
+  // the second catch comes from the WHOLE population, on screen or not
+  let nets, m;
+  for (let t = 0; t < 300; t++) {
+    const pool = shuffle(p.pop.slice()); nets = []; let at = 0;
+    p.netSizes.forEach(sz => { nets.push(pool.slice(at, at + sz)); at += sz; });
+    m = sum(nets.map(ns => ns.filter(a => a.tagged).length));
+    if (m >= p.cfg.minM) break;
+  }
+  p.nets = nets;
+  // who is on screen afterwards: some stay, some leave, new ones swim in (tagged ones too)
+  const K = p.vis1.length, inV = new Set(p.vis1);
+  const stay = shuffle(p.vis1.slice()).slice(0, Math.round(K * 0.5)), stayS = new Set(stay);
+  const outside = p.pop.filter(a => !inV.has(a)), need = K - stay.length;
+  const enterT = shuffle(outside.filter(a => a.tagged)).slice(0, Math.max(2, Math.round(need * p.M / p.N)));
+  const enterO = shuffle(outside.filter(a => !a.tagged)).slice(0, need - enterT.length);
+  const entrants = enterT.concat(enterO);
+  const vis2 = stay.concat(entrants), leavers = p.vis1.filter(a => !stayS.has(a));
+  const np = scatter(vis2.length, 18, 18, W - 18, H - 18, 24, null);
+  vis2.forEach((a, i) => { a.finalX = np[i].x; a.finalY = np[i].y; });
+  $('#releaseBtn').disabled = true; $('#markBtn').disabled = true;
+  const reduce = REDUCE();
+  const finish = () => {
+    if (state.prob !== p) return;
+    leavers.forEach(a => a.g.remove());
+    vis2.forEach(a => { a.x = a.finalX; a.y = a.finalY; a.path = null; });
+    p.vis1 = vis2; p.active = vis2.slice();
+    $('#tagCount').textContent = `${p.M} tagged and released`;
+    setTimeout(() => {
+      if (state.prob !== p) return;
+      $('#recap').innerHTML = recapHTML(p);
+      $('#checkBtn').onclick = checkMark;
+      $('#recap').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    }, reduce ? 0 : 500);
+  };
+  entrants.forEach(a => { a.rot = ri(0, 359); const o = offPoint(); a.x = o.x; a.y = o.y; addEl(p, a); });
+  if (reduce) {
+    entrants.forEach(a => { a.g.style.transform = `translate(${a.finalX.toFixed(1)}px,${a.finalY.toFixed(1)}px)`; });
+    stay.forEach(a => { a.g.style.transform = `translate(${a.finalX.toFixed(1)}px,${a.finalY.toFixed(1)}px)`; });
+    leavers.forEach(a => a.g.remove()); finishSync(p, vis2, leavers, reduce); return;
+  }
+  $('#tagCount').textContent = 'Released. Mixing back in…';
+  const jump = (x, y, lo) => { const ang = rnd() * 6.283, d = lo + rnd() * 110; return { x: clampN(x + Math.cos(ang) * d, 18, W - 18), y: clampN(y + Math.sin(ang) * d, 18, H - 18) }; };
+  const mid = (A, B) => ({ x: (A.x + B.x) / 2 + (rnd() - .5) * 120, y: (A.y + B.y) / 2 + (rnd() - .5) * 120 });
+  const returners = new Set(stay.filter(a => rnd() < (a.tagged ? 0.65 : 0.3)));
+  p.active = p.vis1.concat(entrants);
+  p.active.forEach(a => {
+    const P0 = { x: a.x, y: a.y };
+    if (stayS.has(a) && !returners.has(a)) { const P3 = { x: a.finalX, y: a.finalY }; a.path = [P0, jump(P0.x, P0.y, 110), jump(P3.x, P3.y, 110), P3]; a.dur = 3200 + rnd() * 1000; }
+    else if (returners.has(a)) { const P3 = { x: a.finalX, y: a.finalY }; a.path = [P0, offPoint(), offPoint(), P3]; a.dur = 4600 + rnd() * 1200; }
+    else if (!stayS.has(a) && inV.has(a)) { const P3 = offPoint(); a.path = [P0, jump(P0.x, P0.y, 110), mid(P0, P3), P3]; a.dur = 3000 + rnd() * 1200; }
+    else { const P3 = { x: a.finalX, y: a.finalY }; a.path = [P0, mid(P0, P3), jump(P3.x, P3.y, 110), P3]; a.dur = 3200 + rnd() * 1200; }
+    a.delay = rnd() * 300;
+  });
+  p.anim = { t0: performance.now(), onDone: finish };
+}
+function finishSync(p, vis2, leavers) {
+  vis2.forEach(a => { a.x = a.finalX; a.y = a.finalY; });
+  p.vis1 = vis2; p.active = vis2.slice();
+  $('#tagCount').textContent = `${p.M} tagged and released`;
+  $('#recap').innerHTML = recapHTML(p);
+  $('#checkBtn').onclick = checkMark;
+}
+
+function netSVG(p, ns) {
+  const cols = 12, cell = 36, rows = Math.max(1, Math.ceil(ns.length / cols));
+  let s = `<svg viewBox="0 0 ${cols * cell} ${rows * cell}" role="img" aria-label="Animals in this catch">`;
+  ns.forEach((a, i) => {
+    const cx = (i % cols) * cell + cell / 2, cy = Math.floor(i / cols) * cell + cell / 2;
+    s += `<g class="animal${a.tagged ? ' tagged' : ''}" transform="translate(${cx} ${cy})"><g transform="rotate(${a.rot}) scale(1.3)"><use href="#o-${p.place.sp}"/></g><circle class="rk" r="14.5"/><circle class="rg" r="14.5"/></g>`;
+  });
+  return s + '</svg>';
+}
+
+function recapHTML(p) {
+  const multi = p.nets.length > 1, L = ['A', 'B', 'C'];
+  const netCards = p.nets.map((ids, i) => `
+    <div class="net"><div class="pname"><b>${multi ? 'Net ' + L[i] : 'Second catch'}</b><span>${ids.length} caught · ${ids.filter(a => a.tagged).length} tagged</span></div>
+      ${netSVG(p, ids)}
+    </div>`).join('');
+  return `
+  <div class="card">
+    <h2>Step 2: Read the recapture</h2>
+    <p class="hint">The animals mixed back in. The team set nets across the whole habitat and recorded, for ${multi ? 'each net' : 'the net'}, how many animals were caught and how many of them were tagged (yellow rings).${multi ? ' Add up all three nets.' : ''}</p>
+    <div class="nets">${netCards}</div>
+  </div>
+  <div class="card">
+    <h2>Step 3: Calculate</h2>
+    ${ruleHTML()}
+    ${calcHTML()}
+    <div class="calc">
+      <div class="row"><label for="fM">M = tagged on day 1<small>How many you tagged</small></label><input class="num" id="fM" inputmode="numeric" autocomplete="off"><div class="fb" id="ffM"></div></div>
+      <div class="row"><label for="fn">n = total in the second catch<small>${multi ? 'Add the three net totals' : 'The number caught, shown on the net'}</small></label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
+      <div class="row"><label for="fm">m = tagged in the second catch<small>${multi ? 'Add the three net totals' : 'The number tagged, shown on the net'}</small></label><input class="num" id="fm" inputmode="numeric" autocomplete="off"><div class="fb" id="ffm"></div></div>
+      <div class="row"><label for="fN">N = (M / m) × n<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
+    </div>
+    <p class="msg" id="msg" role="alert"></p>
+    <div class="actions"><button type="button" class="btn primary" id="checkBtn">Check my work</button></div>
+  </div>
+  <div id="after"></div>`;
+}
+
+function checkMark() {
+  const p = state.prob; if (p.checked) return;
+  const sumN = sum(p.nets.map(ns => ns.length)), sumMt = sum(p.nets.map(ns => ns.filter(a => a.tagged).length));
+  const ids = ['fM', 'fn', 'fm', 'fN'];
+  const vals = ids.map(id => parseNum($('#' + id).value));
+  const bad = ids.findIndex((id, i) => Number.isNaN(vals[i]) || (id !== 'fN' && (!Number.isInteger(vals[i]) || vals[i] < 0)));
+  if (bad >= 0) { $('#msg').textContent = Number.isNaN(vals[bad]) ? 'Fill in every box with a number first.' : 'Counts must be whole numbers.'; $('#' + ids[bad]).focus(); return; }
+  $('#msg').textContent = '';
+  p.checked = true;
+  const [Mv, nv, mv, Nv] = vals;
+  let score = 0; const total = 4;
+  const ok1 = Mv === p.M; if (ok1) score++;
+  setField($('#fM'), 'ffM', ok1, ok1 ? '✓ Correct' : `✗ You tagged <b>${p.M}</b>`);
+  const nOk = nv === sumN; if (nOk) score++;
+  setField($('#fn'), 'ffn', nOk, nOk ? '✓ Correct' : `✗ The total is <b>${sumN}</b>`);
+  const mOk = mv === sumMt; if (mOk) score++;
+  setField($('#fm'), 'ffm', mOk, mOk ? '✓ Correct' : `✗ The total is <b>${sumMt}</b>`);
+  const Nexp = mv > 0 ? r1(Mv / mv * nv) : null;
+  let html, NOk = false;
+  if (Nexp === null) html = '✗ m can\'t be 0';
+  else if (Math.abs(Nv - Nexp) < 0.0501) { NOk = true; html = '✓ Correct'; }
+  else if (Math.abs(Nv - Nexp) <= 0.1001) html = `✗ Close. Check your rounding: using your M, m and n, N = <b>${f1(Nexp)}</b>`;
+  else html = `✗ Using your M, m and n, N = <b>${f1(Nexp)}</b>`;
+  if (NOk) score++;
+  setField($('#fN'), 'ffN', NOk, html);
+  lockInputs();
+  const Ncorr = r1(p.M / sumMt * sumN);
+  const err = Math.abs(Ncorr - p.N) / p.N * 100;
+  $('#after').innerHTML = resultCard(score, total, Nv, Ncorr, p.N, err, 'Real population') + lessonMark(p, sumN, sumMt, Ncorr, err);
+  $('#checkBtn').disabled = true;
+  $('#after').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+}
+
+function lessonMark(p, n, m, Ncorr, err) {
+  const multi = p.nets.length > 1, L = ['A', 'B', 'C'];
+  const netN = p.nets.map(ns => ns.length), netM = p.nets.map(ns => ns.filter(a => a.tagged).length);
+  let steps = '';
+  steps += `<li><b>M = ${p.M}.</b> That's how many you tagged on day 1.</li>`;
+  steps += `<li><b>Total second catch.</b> ${multi ? `<span class="calc-line">n = ${netN.map((x, i) => `${x}`).join(' + ')} = ${n}</span> (nets ${netN.map((x, i) => L[i] + ' = ' + x).join(', ')})` : `<span class="calc-line">n = ${n}</span>`}. The team recorded every animal caught, tagged or not.</li>`;
+  steps += `<li><b>Tagged in the second catch.</b> ${multi ? `<span class="calc-line">m = ${netM.join(' + ')} = ${m}</span>` : `<span class="calc-line">m = ${m}</span>`}. The team recorded how many of the catch were tagged.</li>`;
+  steps += `<li><b>The idea.</b> ${m} of ${n} recaptured animals were tagged, which is ${trim(m / n * 100, 1)}%. If the tagged animals mixed in evenly, about ${trim(m / n * 100, 1)}% of the <i>whole</i> population is tagged too. So ${p.M} is about ${trim(m / n * 100, 1)}% of N.</li>`;
+  steps += `<li><b>Calculate.</b> <span class="calc-line">N = (M ÷ m) × n = (${p.M} ÷ ${m}) × ${n} = ${f1(Ncorr)}</span>. Round only the final answer to 1 decimal place.</li>`;
+  return `<div class="card lesson">
+    <h2>How to get the correct answer</h2>
+    <ol>${steps}</ol>
+    <p class="why">The estimate is ${trim(err, 1)}% from the real ${p.N}. It isn't exact because the second catch is a random sample, so m changes a little each time. Only part of the habitat was on screen, and that's fine: the tagged animals mixed in with the whole population, so the catch can come from anywhere. In real life you can't count every animal. That's why mark-recapture is used.</p>
+    <div class="actions" style="margin-top:12px"><button type="button" class="btn primary" id="nextBtn">Next problem</button></div>
+  </div>`;
+}
+
+/* ---------- Calculator (no eval; full precision, students round themselves) ---------- */
+let calcOpen = true;
+function calcEval(src) {
+  const t = src.replace(/\s+/g, '').replace(/[×x*]/gi, '*').replace(/[÷/]/g, '/').replace(/[−–]/g, '-').replace(/,/g, '');
+  let i = 0;
+  const peek = () => t[i];
+  const fac = () => {
+    if (peek() === '-') { i++; return -fac(); }
+    if (peek() === '+') { i++; return fac(); }
+    if (peek() === '(') { i++; const v = expr(); if (peek() !== ')') throw new Error('syntax'); i++; return v; }
+    const m = /^\d*\.?\d+|^\d+\.?/.exec(t.slice(i)); if (!m) throw new Error('syntax');
+    i += m[0].length; return parseFloat(m[0]);
+  };
+  const term = () => {
+    let v = fac();
+    while (peek() === '*' || peek() === '/' || peek() === '(') {
+      if (peek() === '(') { v *= fac(); continue; }
+      const o = t[i++], r = fac();
+      if (o === '/') { if (r === 0) throw new Error('div0'); v /= r; } else v *= r;
+    }
+    return v;
+  };
+  const expr = () => {
+    let v = term();
+    while (peek() === '+' || peek() === '-') { const o = t[i++], r = term(); v = o === '+' ? v + r : v - r; }
+    return v;
+  };
+  if (!t.length) throw new Error('empty');
+  const v = expr(); if (i !== t.length) throw new Error('syntax'); return v;
+}
+const calcFmt = v => { const s = parseFloat(v.toPrecision(12)).toString(); return s.includes('e') ? v.toPrecision(8) : s; };
+function calcHTML() {
+  const keys = ['C', '⌫', '(', ')', '7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '0', '.', '=', '+'];
+  const cls = k => k === '=' ? 'ck eq' : '÷×−+'.includes(k) || 'C⌫()'.includes(k) ? 'ck op' : 'ck';
+  return `<details class="calcbox" ${calcOpen ? 'open' : ''}><summary>Calculator</summary><div class="calcbody">
+    <input class="cexpr" id="cexpr" type="text" inputmode="none" autocomplete="off" spellcheck="false" aria-label="Calculator expression" placeholder="0">
+    <div class="cout" id="cout" aria-live="polite"></div>
+    <div class="ckeys">${keys.map(k => `<button type="button" class="${cls(k)}" data-k="${k}" aria-label="${({ '÷': 'divide', '×': 'times', '−': 'minus', '+': 'plus', '⌫': 'backspace', 'C': 'clear', '=': 'equals' })[k] || k}">${k}</button>`).join('')}</div>
+  </div></details>`;
+}
+function calcPreview(final) {
+  const inp = $('#cexpr'), out = $('#cout'); if (!inp) return;
+  out.classList.remove('err');
+  if (!inp.value.trim()) { out.textContent = ''; return; }
+  try { const v = calcEval(inp.value); if (!Number.isFinite(v)) throw new Error('syntax'); out.textContent = final ? '' : '= ' + calcFmt(v); return v; }
+  catch (e) { if (final) { out.classList.add('err'); out.textContent = e.message === 'div0' ? "Can't divide by 0" : 'Check the expression'; } else out.textContent = ''; }
+}
+function calcPress(k) {
+  const inp = $('#cexpr'); if (!inp) return;
+  const fresh = inp.dataset.fresh === '1';
+  if (k !== '=') inp.dataset.fresh = '0';
+  if (k === 'C') { inp.value = ''; $('#cout').textContent = ''; return; }
+  if (k === '⌫') { inp.value = fresh ? '' : inp.value.slice(0, -1); calcPreview(); return; }
+  if (k === '=') {
+    const v = calcPreview(true); if (v === undefined) return;
+    inp.value = calcFmt(v); inp.dataset.fresh = '1'; $('#cout').textContent = ''; return;
+  }
+  if (fresh && /[0-9.(]/.test(k)) inp.value = '';
+  inp.value += k; calcPreview();
+}
+
+/* ---------- Rendering ---------- */
+function formulaHTML() {
+  const m = state.mode;
+  const eq = m === 'mark' ? 'N = (M / m) × n' : 'N = (A / a) × n';
+  const w = m === 'quad' ? 'area' : 'volume';
+  const vars = m === 'mark'
+    ? ['<b>N</b> estimated population', '<b>M</b> tagged on day 1', '<b>n</b> total in second catch', '<b>m</b> tagged in second catch']
+    : ['<b>N</b> estimated population', `<b>A</b> total ${w}${m === 'liquid' ? ' (mL)' : ''}`, `<b>n</b> number counted`, `<b>a</b> ${w} sampled${m === 'liquid' ? ' (mL)' : ''}`];
+  return `<div class="eq">${eq}</div><ul class="vars">${vars.map(v => `<li>${v}</li>`).join('')}</ul><p class="round">Round your final answer to 1 decimal place (like 245.0).</p>`;
+}
+
+function render() {
+  const p = state.prob;
+  $('#formula').innerHTML = formulaHTML();
+  if (!p) return;
+  if (p.kind === 'liquid') {
+    $('#story').innerHTML = storyLiquid(p) + `<p>${LEVEL_NOTE.liquid[state.level]}</p>`;
+    $('#scene').innerHTML = sceneLiquid(p);
+    $('#legend').textContent = 'The flask is well mixed, so each test tube is a random sample. Only a few of the organisms are drawn in the flask.';
+    $('#work').innerHTML = liquidWork(p);
+    $('#checkBtn').onclick = checkGrid;
+  } else if (p.kind === 'grid') {
+    $('#story').innerHTML = storyGrid(p) + `<p>${LEVEL_NOTE[state.mode][state.level]}</p>`;
+    $('#scene').innerHTML = sceneGrid(p);
+    $('#legend').textContent = p.cfg.leg + ' Yellow frames show where the samples were taken.';
+    $('#work').innerHTML = gridWork(p);
+    $('#checkBtn').onclick = checkGrid;
+  } else {
+    $('#story').innerHTML = storyMark(p) + `<p>${LEVEL_NOTE.mark[state.level]}</p>`;
+    $('#scene').innerHTML = sceneMark(p);
+    $('#legend').textContent = 'You only see part of the habitat. Animals swim in and out of view, and tagged animals (yellow rings) can leave and return.';
+    $('#work').innerHTML = markWork(p);
+    $('#markBtn').onclick = () => markAnimals(p);
+    $('#releaseBtn').onclick = () => release(p);
+    startMotion(p);
+  }
+}
+
+function newProblem() {
+  state.prob = state.mode === 'mark' ? buildMark() : state.mode === 'liquid' ? buildLiquid() : buildGrid();
+  render();
+  window.scrollTo({ top: 0 });
+}
+
+/* ---------- Events ---------- */
+document.addEventListener('click', e => {
+  const mb = e.target.closest('[data-mode]');
+  if (mb) { state.mode = mb.dataset.mode; document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b === mb)); newProblem(); return; }
+  const lb = e.target.closest('[data-level]');
+  if (lb) { state.level = lb.dataset.level; document.querySelectorAll('[data-level]').forEach(b => b.setAttribute('aria-pressed', b === lb)); newProblem(); return; }
+  if (e.target.closest('#newBtn') || e.target.closest('#nextBtn')) { newProblem(); return; }
+  const ck = e.target.closest('.ck');
+  if (ck) { calcPress(ck.dataset.k); return; }
+  const u = e.target.closest('svg.pv use.o');
+  if (u) u.classList.toggle('seen');
+});
+document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('calcbox')) calcOpen = e.target.open; }, true);
+document.addEventListener('input', e => { if (e.target.id === 'cexpr') { e.target.dataset.fresh = '0'; calcPreview(); } });
+document.addEventListener('keydown', e => {
+  if (e.target.id === 'cexpr' && e.key === 'Enter') { e.preventDefault(); calcPress('='); return; } if (e.key === 'Enter' && e.target.classList.contains('num')) { const b = $('#checkBtn'); if (b && !b.disabled) b.click(); } });
+
+buildDefs();
+newProblem();
+window.__test = { state, newProblem, checkGrid, checkMark, release, buildGrid, buildMark };
+})();
+</script>
+</body>
+</html>
