@@ -310,9 +310,9 @@ function buildDefs() {
 /* ---------- Level settings ---------- */
 const CFG = {
   quad: {
-    easy:   { cols: 10, rows: 10, cell: 1, unit: 'm²', shapes: [[1,1]], k: [4,7], N: [250,500], step: 10, minCells: 4, minN: 8, lab: (w,h) => `${w} m × ${h} m`, leg: 'Each grid square is 1 m × 1 m.' },
-    medium: { cols: 12, rows: 10, cell: 1, unit: 'm²', shapes: [[1,1],[2,2]], k: [4,6], N: [300,600], step: 1, minCells: 7, minN: 15, lab: (w,h) => `${w} m × ${h} m`, leg: 'Each grid square is 1 m × 1 m.' },
-    hard:   { cols: 16, rows: 12, cell: 0.25, unit: 'm²', shapes: [[2,1],[2,2]], k: [5,8], N: [240,520], step: 1, minCells: 10, minN: 20, lab: (w,h) => `${w * 50} cm × ${h * 50} cm`, leg: 'Each grid square is 50 cm × 50 cm.', conv: true }
+    easy:   { cols: 10, rows: 10, cell: 1, unit: 'm²', shapes: [[1,1]], k: [4,7], N: [250,500], step: 10, minCells: 4, minN: 8, lab: (w,h) => `${w} m × ${h} m`, leg: 'Each grid square is 1 m × 1 m (1 m²).' },
+    medium: { colsR: [11,14], rowsR: [9,12], cell: 1, unit: 'm²', shapes: [[1,1]], k: [5,8], dens: [3,6], minCells: 5, minN: 15, lab: (w,h) => `${w} m × ${h} m`, leg: 'Each grid square is 1 m × 1 m (1 m²).' },
+    hard:   { colsR: [14,18], rowsR: [11,14], cell: 1, unit: 'm²', shapes: [[1,1]], k: [6,10], dens: [2.5,5], minCells: 6, minN: 20, lab: (w,h) => `${w * 100} cm × ${h * 100} cm`, leg: 'Each grid square is 100 cm × 100 cm.', conv: true }
   },
   liquid: {
     easy:   { unit: 'mL', Alist: [2000, 3000, 4000, 5000, 6000], k: [3, 5], vols: [50, 100, 150, 200], same: true, cmax: [10, 20], Nround: 10, minN: 25 },
@@ -326,7 +326,7 @@ const CFG = {
   }
 };
 const LEVEL_NOTE = {
-  quad:   { easy: 'Same-size quadrats, whole numbers.', medium: 'Quadrats come in two sizes.', hard: 'Sizes are in cm, the total area is in m². Convert before you calculate.' },
+  quad:   { easy: 'Every quadrat is one square, 1 m × 1 m.', medium: 'Every quadrat is 1 m × 1 m. Bigger, less tidy habitat.', hard: 'Quadrat sizes are in cm, the total area is in m². Convert before you calculate.' },
   liquid: { easy: 'Same-size tubes. Everything is in mL.', medium: 'Tubes come in a few sizes. Everything is in mL.', hard: 'Six to eight tubes in different sizes, and a big flask.' },
   mark:   { easy: 'One recapture, round numbers.', medium: 'One recapture, less tidy numbers.', hard: 'Three nets, big population. Add the nets up first.' }
 };
@@ -427,7 +427,8 @@ function edgeProcess(orgs, rects) {
 
 /* ---------- Problem builders (quadrats + liquids) ---------- */
 function buildGrid() {
-  const cfg = CFG[state.mode][state.level];
+  const base = CFG[state.mode][state.level];
+  const cfg = { ...base, cols: base.cols || ri(base.colsR[0], base.colsR[1]), rows: base.rows || ri(base.rowsR[0], base.rowsR[1]) };
   const isQ = state.mode === 'quad';
   let hab, spKey, waterIdx = -1;
   if (isQ) { const key = rnd() < 0.75 ? 'shore' : 'meadow'; hab = HAB[key]; spKey = pick(hab.species); }
@@ -436,7 +437,8 @@ function buildGrid() {
 
   for (let attempt = 0; attempt < 40; attempt++) {
     const rects = layout(cfg);
-    let N = ri(cfg.N[0], cfg.N[1]); if (cfg.step > 1) N = Math.round(N / cfg.step) * cfg.step;
+    let N = cfg.dens ? Math.round(cfg.cols * cfg.rows * (cfg.dens[0] + rnd() * (cfg.dens[1] - cfg.dens[0]))) : ri(cfg.N[0], cfg.N[1]);
+    if (cfg.step > 1) N = Math.round(N / cfg.step) * cfg.step;
     const R = RB;
     const pts = scatter(N, R, R, cfg.cols - R, cfg.rows - R, 0.28, null);
     if (!pts) continue;
@@ -713,7 +715,7 @@ function lessonGrid(p, Ncorr, err) {
   steps += `<li><b>Add the counts.</b> <span class="calc-line">n = ${p.counts.join(' + ')} = ${p.n}</span></li>`;
   if (p.cfg.conv) {
     const lines = p.rects.map((r, i) => isQ
-      ? `${P}${i + 1}: ${p.cfg.lab(r.w, r.h)} = ${fmtN(r.w * 50 * r.h * 50)} cm² = ${fmtN(p.areas[i])} m²`
+      ? `${P}${i + 1}: ${p.cfg.lab(r.w, r.h)} = ${fmtN(r.w * 100 * r.h * 100)} cm² = ${fmtN(p.areas[i])} m²`
       : `${P}${i + 1}: ${r.w * r.h * 200} mL = ${fmtN(p.areas[i])} L`).join('<br>');
     steps += `<li><b>Convert to the same unit as A.</b> ${isQ ? '1 m² = 10,000 cm².' : '1 L = 1,000 mL.'}<br>${lines}</li>`;
   }
