@@ -70,6 +70,29 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--frame); out
 .btn.primary { background: var(--accent); color: var(--accent-ink); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .controls .spacer { flex: 1; }
+.controls.tests { align-items: center; }
+.testnote { margin: 0; color: var(--muted); font-size: 0.92rem; align-self: end; padding-bottom: 8px; }
+.seg.test button[aria-pressed="true"] { background: var(--frame); color: #14282a; }
+.testbar { font-size: 0.98rem; border-left: 6px solid var(--frame); }
+.testbar[hidden] { display: none; }
+.pop { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 20, 20, .5); }
+.popcard { width: 100%; max-width: 540px; max-height: 88vh; overflow: auto; border-radius: 16px; padding: 20px 22px 22px; color: #fff; box-shadow: 0 14px 44px rgba(0,0,0,.4); animation: popin .28s ease-out; }
+.pop.ok .popcard { background: #1d7f47; }
+.pop.bad .popcard { background: #b8352a; }
+.popicon { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,.2); display: grid; place-items: center; font: 700 1.6rem var(--font); margin-bottom: 6px; }
+.popcard h2 { margin: 0 0 6px; font-size: 1.5rem; }
+.popbody { font-size: 1rem; }
+.popbody ul { margin: 8px 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.popbody p { margin: 8px 0 0; }
+.popbody b { font-family: var(--mono); font-weight: 700; }
+.popbtn { background: #fff; color: #14282a; border-color: #fff; margin-top: 14px; }
+.pbig { font: 700 1.6rem var(--mono); }
+@keyframes popin { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .popcard { animation: none; } }
+.sumlist { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.sumlist li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 12px; border-radius: 10px; background: var(--chip); }
+.sumlist .ok { color: var(--good); font-weight: 700; } .sumlist .no { color: var(--bad); font-weight: 700; }
+@media (max-width: 640px) { .seg { flex-direction: column; border-radius: 14px; } .seg button + button { border-left: 0; border-top: 1px solid var(--line); } }
 
 main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .scene-col { display: grid; gap: 10px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
@@ -177,16 +200,16 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
     <div class="formula" id="formula" aria-live="polite"></div>
   </header>
 
-  <section class="controls" aria-label="Choose a problem type">
+  <section class="controls" aria-label="Practice">
     <div class="ctrl">
-      <span class="ctrl-label" id="lblMode">Method</span>
+      <span class="ctrl-label" id="lblMode">Practice</span>
       <div class="seg" role="group" aria-labelledby="lblMode" id="modeSeg">
-        <button type="button" data-mode="quad" aria-pressed="true">Quadrats</button>
-        <button type="button" data-mode="liquid" aria-pressed="false">Liquid samples</button>
-        <button type="button" data-mode="mark" aria-pressed="false">Mark-recapture</button>
+        <button type="button" data-mode="quad" aria-pressed="true">Quadrat practice</button>
+        <button type="button" data-mode="liquid" aria-pressed="false">Liquid practice</button>
+        <button type="button" data-mode="mark" aria-pressed="false">Mark-recapture practice</button>
       </div>
     </div>
-    <div class="ctrl">
+    <div class="ctrl" id="levelCtrl">
       <span class="ctrl-label" id="lblLevel">Level</span>
       <div class="seg" role="group" aria-labelledby="lblLevel" id="levelSeg">
         <button type="button" data-level="easy" aria-pressed="true">Easy</button>
@@ -197,6 +220,17 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
     <span class="spacer"></span>
     <button type="button" class="btn primary" id="newBtn">New problem</button>
   </section>
+  <section class="controls tests" aria-label="Tests">
+    <div class="ctrl">
+      <span class="ctrl-label" id="lblTest">Test yourself</span>
+      <div class="seg test" role="group" aria-labelledby="lblTest" id="testSeg">
+        <button type="button" data-test="sampling" aria-pressed="false">Random sampling test</button>
+        <button type="button" data-test="mark" aria-pressed="false">Mark and recapture test</button>
+      </div>
+    </div>
+    <p class="testnote">5 questions, easy and medium. Every box has to be right for the question to count.</p>
+  </section>
+  <div class="card testbar" id="testbar" hidden></div>
 
   <main>
     <section class="scene-col" aria-label="The habitat">
@@ -646,7 +680,8 @@ function checkGrid() {
   lockInputs();
   const Ncorr = r1(p.A / p.a * p.n);
   const err = Math.abs(Ncorr - p.N) / p.N * 100;
-  $('#after').innerHTML = resultCard(score, total, Nv, Ncorr, p.N, err, 'Real population') + (p.kind === 'liquid' ? lessonLiquid : lessonGrid)(p, Ncorr, err);
+  if (state.test) testResult(aOk && nOk && NOk, gridIssues(p, { a, n, Nv, aOk, nOk, NOk, Nexp }), `N = (${p.A} ÷ ${fmtN(p.a)}) × ${p.n} = ${f1(Ncorr)}`, f1(Ncorr));
+  else $('#after').innerHTML = resultCard(score, total, Nv, Ncorr, p.N, err, 'Real population') + (p.kind === 'liquid' ? lessonLiquid : lessonGrid)(p, Ncorr, err);
   $('#checkBtn').disabled = true;
   $('#after').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
 }
@@ -954,7 +989,8 @@ function checkMark() {
   lockInputs();
   const Ncorr = r1(p.M / sumMt * sumN);
   const err = Math.abs(Ncorr - p.N) / p.N * 100;
-  $('#after').innerHTML = resultCard(score, total, Nv, Ncorr, p.N, err, 'Real population') + lessonMark(p, sumN, sumMt, Ncorr, err);
+  if (state.test) testResult(ok1 && nOk && mOk && NOk, markIssues(p, { Mv, nv, mv, Nv, ok1, nOk, mOk, NOk, Nexp, sumN, sumMt }), `N = (${p.M} ÷ ${sumMt}) × ${sumN} = ${f1(Ncorr)}`, f1(Ncorr));
+  else $('#after').innerHTML = resultCard(score, total, Nv, Ncorr, p.N, err, 'Real population') + lessonMark(p, sumN, sumMt, Ncorr, err);
   $('#checkBtn').disabled = true;
   $('#after').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
 }
@@ -1037,6 +1073,125 @@ function calcPress(k) {
   inp.value += k; calcPreview();
 }
 
+/* ---------- Tests: confetti + green/red pop-ups ---------- */
+const TEST_LEN = 5;
+const MODE_NAME = { quad: 'Quadrat', liquid: 'Liquid sample', mark: 'Mark-recapture' };
+const LVL_NAME = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+let cf = 0;
+function confetti() {
+  if (REDUCE()) return;
+  let cv = $('#confetti');
+  if (!cv) { cv = document.createElement('canvas'); cv.id = 'confetti'; cv.setAttribute('aria-hidden', 'true'); cv.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1100'; document.body.appendChild(cv); }
+  const ctx = cv.getContext && cv.getContext('2d'); if (!ctx) return;
+  const dpr = window.devicePixelRatio || 1, Wd = innerWidth, Hd = innerHeight;
+  cv.width = Wd * dpr; cv.height = Hd * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cols = ['#1d7f47', '#f5b301', '#e0218a', '#0e6f6a', '#3b82f6', '#ff7a1a', '#ffffff'];
+  const parts = Array.from({ length: 180 }, () => ({ x: rnd() * Wd, y: -20 - rnd() * Hd * 0.7, vx: (rnd() - .5) * 2, vy: 2 + rnd() * 3.5, r: rnd() * 6.28, vr: (rnd() - .5) * .3, w: 6 + rnd() * 6, h: 9 + rnd() * 8, c: pick(cols), wob: rnd() * 6.28 }));
+  const t0 = performance.now(); cancelAnimationFrame(cf);
+  const step = now => {
+    ctx.clearRect(0, 0, Wd, Hd); let alive = 0;
+    parts.forEach(q => {
+      q.vy += 0.03; q.x += q.vx + Math.sin(now / 300 + q.wob) * 0.6; q.y += q.vy; q.r += q.vr;
+      if (q.y < Hd + 30) alive++;
+      ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.r); ctx.fillStyle = q.c; ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); ctx.restore();
+    });
+    if (alive && now - t0 < 7000) cf = requestAnimationFrame(step); else ctx.clearRect(0, 0, Wd, Hd);
+  };
+  cf = requestAnimationFrame(step);
+}
+function closePopup() { const o = $('#pop'); if (o) o.remove(); const cv = $('#confetti'); if (cv && !cv.dataset.keep) { /* let confetti finish falling */ } }
+function showPopup(ok, head, body, btn, onBtn) {
+  closePopup();
+  const o = document.createElement('div');
+  o.id = 'pop'; o.className = 'pop ' + (ok ? 'ok' : 'bad'); o.setAttribute('role', 'alertdialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-labelledby', 'pophead');
+  o.innerHTML = `<div class="popcard"><div class="popicon" aria-hidden="true">${ok ? '✓' : '✗'}</div><h2 id="pophead">${head}</h2><div class="popbody">${body}</div><button type="button" class="btn popbtn" id="popBtn">${btn}</button></div>`;
+  document.body.appendChild(o);
+  $('#popBtn').onclick = () => { closePopup(); onBtn(); };
+  $('#popBtn').focus();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+
+function gridIssues(p, v) {
+  const out = [], liquid = p.kind === 'liquid';
+  if (!v.nOk) out.push(`<b>n</b> is the total of the counts shown: ${p.counts.join(' + ')} = ${p.n}. You entered ${v.n}.`);
+  if (!v.aOk) out.push(liquid
+    ? `<b>a</b> is the total volume of all the test tubes: ${p.tubes.map(t => t.v).join(' + ')} = ${p.a} mL. You entered ${fmtN(v.a)}.`
+    : `<b>a</b> is the total area of all the quadrats: ${p.areas.map(fmtN).join(' + ')} = ${fmtN(p.a)} ${p.cfg.unit}. You entered ${fmtN(v.a)}.`);
+  if (!v.NOk) {
+    if (v.Nexp === null) out.push(`<b>a</b> can't be 0.`);
+    else if (Math.abs(v.Nv - v.Nexp) <= 0.1001) out.push(`<b>N</b> is almost there, but the rounding is off. Round to 1 decimal place: with your numbers (A ÷ a) × n = ${f1(v.Nexp)}. You entered ${v.Nv}.`);
+    else out.push(`<b>N</b> comes from N = (A ÷ a) × n. With your numbers that is (${p.A} ÷ ${fmtN(v.a)}) × ${v.n} = ${f1(v.Nexp)}. You entered ${v.Nv}.`);
+  }
+  return out;
+}
+function markIssues(p, v) {
+  const out = [];
+  const netN = p.nets.map(ns => ns.length), netM = p.nets.map(ns => ns.filter(a => a.tagged).length);
+  const lst = arr => arr.length > 1 ? `${arr.join(' + ')} = ` : '';
+  if (!v.ok1) out.push(`<b>M</b> is how many animals were tagged on day 1: ${p.M}. You entered ${v.Mv}.`);
+  if (!v.nOk) out.push(`<b>n</b> is the total caught in the second catch: ${lst(netN)}${v.sumN}. You entered ${v.nv}.`);
+  if (!v.mOk) out.push(`<b>m</b> is how many of the second catch were tagged: ${lst(netM)}${v.sumMt}. You entered ${v.mv}.`);
+  if (!v.NOk) {
+    if (v.Nexp === null) out.push(`<b>m</b> can't be 0.`);
+    else if (Math.abs(v.Nv - v.Nexp) <= 0.1001) out.push(`<b>N</b> is almost there, but the rounding is off. Round to 1 decimal place: with your numbers (M ÷ m) × n = ${f1(v.Nexp)}. You entered ${v.Nv}.`);
+    else out.push(`<b>N</b> comes from N = (M ÷ m) × n. With your numbers that is (${v.Mv} ÷ ${v.mv}) × ${v.nv} = ${f1(v.Nexp)}. You entered ${v.Nv}.`);
+  }
+  return out;
+}
+
+function updateTestBar(done) {
+  const t = state.test, bar = $('#testbar');
+  bar.hidden = !t; if (!t) return;
+  bar.innerHTML = `<b>${t.kind === 'mark' ? 'Mark and recapture test' : 'Random sampling test'}</b> · ${done ? 'Finished' : `Question ${t.i} of ${TEST_LEN}`} · Score ${t.score} · Round N to 1 decimal place`;
+}
+function syncControls() {
+  const t = state.test;
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', !t && b.dataset.mode === state.mode));
+  document.querySelectorAll('[data-level]').forEach(b => b.setAttribute('aria-pressed', b.dataset.level === state.level));
+  document.querySelectorAll('[data-test]').forEach(b => b.setAttribute('aria-pressed', !!t && b.dataset.test === t.kind));
+  $('#levelCtrl').hidden = !!t; $('#newBtn').hidden = !!t;
+  updateTestBar();
+}
+function startTest(kind) {
+  closePopup();
+  if (!state.test) state.pLevel = state.level;
+  const lv = shuffle(['easy', 'easy', 'medium', 'medium', pick(['easy', 'medium'])]);
+  const md = kind === 'mark' ? Array(TEST_LEN).fill('mark') : shuffle(['quad', 'quad', 'liquid', 'liquid', pick(['quad', 'liquid'])]);
+  state.test = { kind, i: 0, score: 0, res: [], lv, md };
+  testNextQ();
+}
+function testNextQ() {
+  const t = state.test; if (!t) return;
+  if (t.i >= TEST_LEN) { testSummary(); return; }
+  state.mode = t.md[t.i]; state.level = t.lv[t.i]; t.i++;
+  syncControls(); newProblem();
+}
+function testResult(ok, issues, correctLine, correctN) {
+  const t = state.test; if (!t) return;
+  t.res.push({ label: `${MODE_NAME[state.mode]} (${LVL_NAME[state.level]})`, ok });
+  if (ok) t.score++;
+  updateTestBar();
+  const last = t.i >= TEST_LEN, btn = last ? 'See my score' : 'Next question';
+  $('#after').innerHTML = `<div class="card"><div class="actions"><button type="button" class="btn primary testNext">${btn}</button></div></div>`;
+  if (ok) {
+    showPopup(true, 'Correct!', `<p>All your answers are right.</p><p class="pbig">N = ${correctN}</p><p>Score: ${t.score} of ${t.i}</p>`, btn, testNextQ);
+    confetti();
+  } else {
+    showPopup(false, 'Not quite', `<p>Here is what went wrong:</p><ul>${issues.map(x => `<li>${x}</li>`).join('')}</ul><p>The correct answer is <b>${correctLine}</b>.</p>`, btn, testNextQ);
+  }
+}
+function testSummary() {
+  const t = state.test; updateTestBar(true);
+  $('#story').innerHTML = `<p><b>Test complete.</b> You got ${t.score} of ${TEST_LEN} right.</p><p>Take it again for new problems, or go back to practice.</p>`;
+  $('#scene').innerHTML = ''; $('#legend').textContent = '';
+  const msg = t.score === TEST_LEN ? 'Perfect score!' : t.score >= 4 ? 'Great work.' : t.score >= 3 ? 'Good start. Practice the steps you missed.' : 'Keep practicing. Use the practice buttons for a worked walkthrough.';
+  $('#work').innerHTML = `<div class="card"><h2>${t.score} / ${TEST_LEN}</h2><p class="hint">${msg}</p>
+    <ul class="sumlist">${t.res.map((r, i) => `<li><span>Question ${i + 1}: ${r.label}</span><span class="${r.ok ? 'ok' : 'no'}">${r.ok ? '✓ Correct' : '✗ Missed'}</span></li>`).join('')}</ul>
+    <div class="actions" style="margin-top:14px"><button type="button" class="btn primary" data-test="${t.kind}">Take the test again</button><button type="button" class="btn" data-mode="quad">Back to practice</button></div></div>`;
+  if (t.score === TEST_LEN) confetti();
+  window.scrollTo({ top: 0 });
+}
+
 /* ---------- Rendering ---------- */
 function formulaHTML() {
   const m = state.mode;
@@ -1083,10 +1238,13 @@ function newProblem() {
 
 /* ---------- Events ---------- */
 document.addEventListener('click', e => {
+  const tb = e.target.closest('[data-test]');
+  if (tb) { startTest(tb.dataset.test); return; }
   const mb = e.target.closest('[data-mode]');
-  if (mb) { state.mode = mb.dataset.mode; document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b === mb)); newProblem(); return; }
+  if (mb) { closePopup(); if (state.test) { state.level = state.pLevel || 'easy'; state.test = null; } state.mode = mb.dataset.mode; syncControls(); newProblem(); return; }
   const lb = e.target.closest('[data-level]');
-  if (lb) { state.level = lb.dataset.level; document.querySelectorAll('[data-level]').forEach(b => b.setAttribute('aria-pressed', b === lb)); newProblem(); return; }
+  if (lb) { state.level = lb.dataset.level; syncControls(); newProblem(); return; }
+  if (e.target.closest('.testNext')) { testNextQ(); return; }
   if (e.target.closest('#newBtn') || e.target.closest('#nextBtn')) { newProblem(); return; }
   const ck = e.target.closest('.ck');
   if (ck) { calcPress(ck.dataset.k); return; }
@@ -1099,8 +1257,9 @@ document.addEventListener('keydown', e => {
   if (e.target.id === 'cexpr' && e.key === 'Enter') { e.preventDefault(); calcPress('='); return; } if (e.key === 'Enter' && e.target.classList.contains('num')) { const b = $('#checkBtn'); if (b && !b.disabled) b.click(); } });
 
 buildDefs();
+syncControls();
 newProblem();
-window.__test = { state, newProblem, checkGrid, checkMark, release, buildGrid, buildMark };
+window.__test = { testNextQ, startTest, state, newProblem, checkGrid, checkMark, release, buildGrid, buildMark };
 })();
 </script>
 </body>
