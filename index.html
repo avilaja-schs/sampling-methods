@@ -71,6 +71,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--frame); out
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .controls .spacer { flex: 1; }
 .controls.tests { align-items: center; }
+.ver { margin: 4px 0 0; color: var(--muted); font-size: 0.8rem; text-align: center; }
 .testnote { margin: 0; color: var(--muted); font-size: 0.92rem; align-self: end; padding-bottom: 8px; }
 .seg.test button[aria-pressed="true"] { background: var(--frame); color: #14282a; }
 .testbar { font-size: 0.98rem; border-left: 6px solid var(--frame); }
@@ -189,96 +190,6 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
 </style>
 </head>
 <body>
-<!-- ===== TOOL KIT v1 START (same block in every tool; only the data-* settings on #kit-bar change) =====
-     data-repo  = this tool's GitHub repo (for the teacher-only Edit code link)
-     data-adopt = the tool's own controls to move into the bar (CSS selectors); a selector ending in "+" also hides the spot it came from
-     data-dark  = tool (tool has its own dark button) | kit (bar adds one) | none (tool has no dark mode) | always (tool is always dark) -->
-<style id="kit-v1-css">
-#kit-bar { --kit-bg: #0a7584; --kit-ink: #ffffff; --kit-line: rgba(255,255,255,0.55); --kit-edit-bg: #ece3f7; --kit-edit-ink: #3b2160;
-  background: var(--kit-bg); color: var(--kit-ink); font-family: "Lexend", "Segoe UI", system-ui, sans-serif; font-size: 0.9rem; line-height: 1.3; text-align: left;
-  padding: max(8px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); box-sizing: border-box; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #kit-bar:not([data-dark="none"]) { --kit-bg: #0e3a44; --kit-ink: #e2eff2; --kit-line: rgba(226,239,242,0.45); --kit-edit-bg: #3a2a55; --kit-edit-ink: #eadcff; } }
-:root[data-theme="dark"] #kit-bar:not([data-dark="none"]), #kit-bar[data-dark="always"] { --kit-bg: #0e3a44; --kit-ink: #e2eff2; --kit-line: rgba(226,239,242,0.45); --kit-edit-bg: #3a2a55; --kit-edit-ink: #eadcff; }
-#kit-bar * { box-sizing: border-box; }
-#kit-bar .kit-row { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-#kit-bar .kit-home { color: var(--kit-ink); text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
-  min-height: 34px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--kit-line); }
-#kit-bar .kit-home:hover { background: rgba(255,255,255,0.12); }
-#kit-bar .kit-spacer { flex: 1; }
-#kit-slot { display: contents; }
-#kit-bar button { background: transparent !important; color: var(--kit-ink) !important; border: 1px solid var(--kit-line) !important;
-  font: inherit !important; font-weight: 400 !important; min-height: 34px; padding: 4px 12px !important; border-radius: 8px !important; cursor: pointer; margin: 0 !important; box-shadow: none !important; }
-#kit-bar .kit-seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--kit-line); border-radius: 8px; overflow: hidden; background: transparent; margin: 0; padding: 0; }
-#kit-bar .kit-seg button { border: 0 !important; border-radius: 0 !important; }
-#kit-bar .kit-seg button + button { border-left: 1px solid var(--kit-line) !important; }
-#kit-bar .kit-seg [aria-pressed="true"] { background: var(--kit-ink) !important; color: var(--kit-bg) !important; font-weight: 500 !important; }
-#kit-bar .kit-edit { display: none; background: var(--kit-edit-bg); color: var(--kit-edit-ink); text-decoration: none; font-weight: 500;
-  min-height: 34px; padding: 6px 12px; border-radius: 8px; align-items: center; gap: 6px; }
-#kit-bar.kit-teacher .kit-edit { display: inline-flex; }
-#kit-bar a:focus-visible, #kit-bar button:focus-visible { outline: 3px solid #f4a23c !important; outline-offset: 2px; }
-@media print { #kit-bar { display: none; } }
-</style>
-<div id="kit-bar" data-repo="sampling-methods" data-adopt="" data-dark="kit">
-  <div class="kit-row">
-    <a class="kit-home" href="https://avilaja-schs.github.io/"><span aria-hidden="true">&#8592;</span> All tools</a>
-    <span class="kit-spacer"></span>
-    <span id="kit-slot"></span>
-    <a class="kit-edit" id="kit-edit" target="_blank" rel="noopener" title="Teacher only: opens this tool's code on GitHub"><span aria-hidden="true">&#9998;</span> Edit code</a>
-  </div>
-</div>
-<script id="kit-v1-js">
-(function () {
-  var KEY = "avila-teacher", CODE = "scavila", THEME = "avila-theme";
-  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
-  var root = document.documentElement;
-  // kit dark button: apply the saved choice before the page draws
-  var barEarly = document.getElementById("kit-bar");
-  // stretch the bar edge to edge even when the tool's page has its own margins/padding
-  if (barEarly && document.body) {
-    var cs = getComputedStyle(document.body), n = function (v) { return parseFloat(v) || 0; };
-    var t = n(cs.marginTop) + n(cs.paddingTop), l = n(cs.marginLeft) + n(cs.paddingLeft), r = n(cs.marginRight) + n(cs.paddingRight);
-    if (t || l || r) barEarly.style.margin = (-t) + "px " + (-r) + "px " + t + "px " + (-l) + "px";
-  }
-  if (barEarly && barEarly.getAttribute("data-dark") === "kit") { var saved = store(THEME); if (saved === "dark" || saved === "light") root.setAttribute("data-theme", saved); }
-  function start() {
-    var bar = document.getElementById("kit-bar"); if (!bar) return;
-    var slot = document.getElementById("kit-slot");
-    document.getElementById("kit-edit").href = "https://github.com/avilaja-schs/" + bar.getAttribute("data-repo") + "/edit/main/index.html";
-    // move the tool's own controls into the bar; their click handlers come along with them
-    (bar.getAttribute("data-adopt") || "").split(/\s+/).forEach(function (entry) {
-      if (!entry) return;
-      var hideFrom = entry.slice(-1) === "+", sel = hideFrom ? entry.slice(0, -1) : entry, el;
-      try { el = document.querySelector(sel); } catch (e) { return; }
-      if (!el) return;
-      var from = el.parentElement;
-      if (el.tagName !== "BUTTON" && el.querySelectorAll("button").length > 1) el.classList.add("kit-seg");
-      slot.appendChild(el);
-      if (hideFrom && from && from !== document.body) from.style.display = "none";
-    });
-    if (bar.getAttribute("data-dark") === "kit") {
-      var b = document.createElement("button"); b.type = "button"; b.id = "kit-theme";
-      var isDark = function () { var t = root.getAttribute("data-theme"); return t ? t === "dark" : !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches); };
-      var label = function () { b.textContent = isDark() ? "\u2600 Light mode" : "\u263E Dark mode"; };
-      b.addEventListener("click", function () { var next = isDark() ? "light" : "dark"; root.setAttribute("data-theme", next); store(THEME, next); label(); });
-      label(); slot.insertBefore(b, slot.firstChild);
-    }
-    var on = store(KEY) === "1";
-    function show() { bar.classList.toggle("kit-teacher", on); }
-    show();
-    // typing the teacher code anywhere turns the Edit link on; typing it again turns it off
-    var typed = "";
-    document.addEventListener("keydown", function (e) {
-      if (!e.key || e.key.length !== 1) return;
-      typed = (typed + e.key.toLowerCase()).slice(-CODE.length);
-      if (typed === CODE) { on = !on; store(KEY, on ? "1" : null); typed = ""; show(); }
-    });
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
-})();
-</script>
-<!-- ===== TOOL KIT v1 END ===== -->
-
-
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs id="defs"></defs></svg>
 
 <div class="wrap">
@@ -330,6 +241,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
     </section>
     <section class="work-col" id="work" aria-label="Worksheet"></section>
   </main>
+  <p class="ver">Version: each quadrat is 1 m² · 2026-10-15b</p>
 </div>
 
 <script>
@@ -400,9 +312,9 @@ function buildDefs() {
 /* ---------- Level settings ---------- */
 const CFG = {
   quad: {
-    easy:   { cols: 10, rows: 10, cell: 1, unit: 'm²', shapes: [[1,1]], k: [4,7], N: [250,500], step: 10, minCells: 4, minN: 8, lab: (w,h) => `${w} m × ${h} m`, leg: 'Each grid square is 1 m × 1 m (1 m²).' },
-    medium: { colsR: [11,14], rowsR: [9,12], cell: 1, unit: 'm²', shapes: [[1,1]], k: [5,8], dens: [3,6], minCells: 5, minN: 15, lab: (w,h) => `${w} m × ${h} m`, leg: 'Each grid square is 1 m × 1 m (1 m²).' },
-    hard:   { colsR: [14,18], rowsR: [11,14], cell: 1, unit: 'm²', shapes: [[1,1]], k: [6,10], dens: [2.5,5], minCells: 6, minN: 20, lab: (w,h) => `${w * 100} cm × ${h * 100} cm`, leg: 'Each grid square is 100 cm × 100 cm.', conv: true }
+    easy:   { cols: 10, rows: 10, cell: 1, unit: 'm²', k: [4,7], N: [250,500], step: 10, minCells: 4, minN: 8, lab: (w,h) => `${w * h} m²`, leg: 'Each grid square is 1 m².' },
+    medium: { colsR: [11,14], rowsR: [9,12], cell: 1, unit: 'm²', k: [5,8], dens: [3,6], minCells: 5, minN: 15, lab: (w,h) => `${w * h} m²`, leg: 'Each grid square is 1 m².' },
+    hard:   { colsR: [14,18], rowsR: [11,14], cell: 1, unit: 'm²', k: [6,10], dens: [2.5,5], minCells: 6, minN: 20, lab: (w,h) => `${w * h} m²`, leg: 'Each grid square is 1 m².' }
   },
   liquid: {
     easy:   { unit: 'mL', Alist: [2000, 3000, 4000, 5000, 6000], k: [3, 5], vols: [50, 100, 150, 200], same: true, cmax: [10, 20], Nround: 10, minN: 25 },
@@ -416,7 +328,7 @@ const CFG = {
   }
 };
 const LEVEL_NOTE = {
-  quad:   { easy: 'Every quadrat is one square, 1 m × 1 m.', medium: 'Every quadrat is 1 m × 1 m. Bigger, less tidy habitat.', hard: 'Quadrat sizes are in cm, the total area is in m². Convert before you calculate.' },
+  quad:   { easy: 'Every quadrat is 1 m².', medium: 'Every quadrat is 1 m². Bigger, less tidy habitat.', hard: 'Every quadrat is 1 m². The biggest habitat and the most quadrats.' },
   liquid: { easy: 'Same-size tubes. Everything is in mL.', medium: 'Tubes come in a few sizes. Everything is in mL.', hard: 'Six to eight tubes in different sizes, and a big flask.' },
   mark:   { easy: 'One recapture, round numbers.', medium: 'One recapture, less tidy numbers.', hard: 'Three nets, big population. Add the nets up first.' }
 };
@@ -456,9 +368,7 @@ function layout(cfg) {
     for (let i = 0; i < k; i++) {
       let done = false;
       for (let t = 0; t < 80 && !done; t++) {
-        const s = pick(cfg.shapes);
-        let w = s[0], h = s[1];
-        if (w !== h && rnd() < 0.5) { const tmp = w; w = h; h = tmp; }
+        const w = 1, h = 1; // every quadrat is one 1 m x 1 m square
         if (cells + w * h > cap) continue;
         const r = { x: ri(0, cfg.cols - w), y: ri(0, cfg.rows - h), w, h };
         if (placed.some(p => overlap(p, r, 1))) continue;
@@ -623,7 +533,7 @@ function liquidWork(p) {
   return `
   <div class="card">
     <h2>Step 1: Read the counts</h2>
-    <p class="hint">Each test tube shows how many ${esc(p.pl)} were counted in it. Add the counts up to get n.</p>
+    <p class="hint">Each test tube shows how many ${esc(p.pl)} were counted in it.${state.test ? '' : ' Add the counts up to get n.'}</p>
     <div class="panels tubes">${panels}</div>
   </div>
   <div class="card">
@@ -631,10 +541,10 @@ function liquidWork(p) {
     ${ruleHTML()}
     ${calcHTML()}
     <div class="calc">
-      <div class="given"><span>A = total volume in the flask (given)</span><b>${p.A} mL</b></div>
-      <div class="row"><label for="fa">a = total volume sampled<small>Add up all the test tubes. Unit: mL</small></label><input class="num" id="fa" inputmode="decimal" autocomplete="off"><div class="fb" id="ffa"></div></div>
-      <div class="row"><label for="fn">n = total number counted<small>Add the counts from every test tube</small></label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
-      <div class="row"><label for="fN">N = (A / a) × n<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
+      ${givenRow('A', 'total volume in the flask', p.A + ' mL')}
+      <div class="row"><label for="fa">${vlab('a', 'total volume sampled', 'Add up all the test tubes. Unit: mL')}</label><input class="num" id="fa" inputmode="decimal" autocomplete="off"><div class="fb" id="ffa"></div></div>
+      <div class="row"><label for="fn">${vlab('n', 'total number counted', 'Add the counts from every test tube')}</label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
+      <div class="row"><label for="fN">${state.test ? 'N' : 'N = (A / a) × n'}<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
     </div>
     <p class="msg" id="msg" role="alert"></p>
     <div class="actions"><button type="button" class="btn primary" id="checkBtn">Check my work</button></div>
@@ -658,18 +568,16 @@ function lessonLiquid(p, Ncorr, err) {
   </div>`;
 }
 
+const vlab = (sym, def, hint) => state.test ? sym : `${sym} = ${def}<small>${hint}</small>`; // tests don't define the variables
+const givenRow = (sym, def, val) => `<div class="given"><span>${state.test ? sym : `${sym} = ${def} (given)`}</span><b>${val}</b></div>`;
 function ruleHTML() {
-  return `<div class="rule"><b>Rounding rule:</b> round your final answer N to <b>1 decimal place</b> (like 245.0). Keep the full number in your calculator and round only at the very end.</div>`;
+  return `<div class="rule"><b>Rounding rule:</b> round your final answer ${state.test ? '' : 'N '}to <b>1 decimal place</b> (like 245.0). Keep the full number in your calculator and round only at the very end.</div>`;
 }
 
 function storyGrid(p) {
-  const { cfg, pl, A, k } = p;
-  if (state.mode === 'quad') {
-    return `<p>${cap1(p.hab.name === 'meadow' ? 'a meadow' : 'a rocky shore')} covers <b>${fmtN(A)} m²</b>. ${k} quadrats were placed at random spots, and together they never cover more than 10% of it.</p>
-      <p>Each quadrat shows how many ${esc(pl)} were counted in it. Add the counts, then estimate how many live on the whole ${p.hab.name}.${cfg.conv ? ' Quadrat sizes are in cm and A is in m², so convert before you calculate.' : ''}</p>`;
-  }
-  return `<p>${cap1(p.hab.name)} holds <b>${fmtN(A)} L</b> of water. ${k} dips were taken from random spots, and together they never take more than 10% of the water.</p>
-    <p>Count the ${esc(pl)} in each dip, then estimate how many are in the whole ${p.hab.short}.${cfg.conv ? ' Dip sizes are in mL and A is in L, so convert before you calculate.' : ''}</p>`;
+  const { pl, A, k } = p;
+  return `<p>${cap1(p.hab.name === 'meadow' ? 'a meadow' : 'a rocky shore')} covers <b>${fmtN(A)} m²</b>. ${k} quadrats, each <b>1 m²</b>, were placed at random spots, and together they never cover more than 10% of it.</p>
+      <p>Each quadrat shows how many ${esc(pl)} were counted in it. Add the counts, then estimate how many live on the whole ${p.hab.name}.</p>`;
 }
 
 const useTag = o => `<use class="o" href="#o-${o.sp}" transform="translate(${o.x.toFixed(3)} ${o.y.toFixed(3)}) rotate(${o.rot}) scale(${o.s.toFixed(4)})"/>`;
@@ -718,7 +626,7 @@ function gridWork(p) {
   return `
   <div class="card">
     <h2>Step 1: Read the counts</h2>
-    <p class="hint">Each ${thing} shows how many ${esc(p.pl)} were counted in it. Add the counts up to get n. Edge rule used: an organism at least half inside the frame is counted (pink ring). Less than half is not.</p>
+    <p class="hint">Each ${thing} shows how many ${esc(p.pl)} were counted in it.${state.test ? '' : ' Add the counts up to get n.'} Edge rule used: an organism at least half inside the frame is counted (pink ring). Less than half is not.</p>
     <div class="panels" id="panels">${panels}</div>
   </div>
   <div class="card">
@@ -726,10 +634,10 @@ function gridWork(p) {
     ${ruleHTML()}
     ${calcHTML()}
     <div class="calc">
-      <div class="given"><span>A = total ${aWord} (given)</span><b>${fmtN(p.A)} ${p.cfg.unit}</b></div>
-      <div class="row"><label for="fa">a = total ${aWord} sampled<small>Add up all the ${thing}s. Unit: ${p.cfg.unit}</small></label><input class="num" id="fa" inputmode="decimal" autocomplete="off"><div class="fb" id="ffa"></div></div>
-      <div class="row"><label for="fn">n = total number counted<small>Add the counts from every ${thing}</small></label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
-      <div class="row"><label for="fN">N = (A / a) × n<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
+      ${givenRow('A', 'total ' + aWord, fmtN(p.A) + ' ' + p.cfg.unit)}
+      <div class="row"><label for="fa">${vlab('a', 'total ' + aWord + ' sampled', 'Add up all the ' + thing + 's. Unit: ' + p.cfg.unit)}</label><input class="num" id="fa" inputmode="decimal" autocomplete="off"><div class="fb" id="ffa"></div></div>
+      <div class="row"><label for="fn">${vlab('n', 'total number counted', 'Add the counts from every ' + thing)}</label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
+      <div class="row"><label for="fN">${state.test ? 'N' : 'N = (A / a) × n'}<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
     </div>
     <p class="msg" id="msg" role="alert"></p>
     <div class="actions"><button type="button" class="btn primary" id="checkBtn">Check my work</button></div>
@@ -803,12 +711,6 @@ function lessonGrid(p, Ncorr, err) {
   let steps = '';
   steps += `<li><b>Read each ${thing}'s count.</b> ${p.rects.map((_, i) => `${P}${i + 1} = ${p.counts[i]}`).join(', ')}.${edgeLesson(p)}</li>`;
   steps += `<li><b>Add the counts.</b> <span class="calc-line">n = ${p.counts.join(' + ')} = ${p.n}</span></li>`;
-  if (p.cfg.conv) {
-    const lines = p.rects.map((r, i) => isQ
-      ? `${P}${i + 1}: ${p.cfg.lab(r.w, r.h)} = ${fmtN(r.w * 100 * r.h * 100)} cm² = ${fmtN(p.areas[i])} m²`
-      : `${P}${i + 1}: ${r.w * r.h * 200} mL = ${fmtN(p.areas[i])} L`).join('<br>');
-    steps += `<li><b>Convert to the same unit as A.</b> ${isQ ? '1 m² = 10,000 cm².' : '1 L = 1,000 mL.'}<br>${lines}</li>`;
-  }
   steps += `<li><b>Add the ${isQ ? 'area' : 'volume'} sampled.</b> <span class="calc-line">a = ${p.areas.map(fmtN).join(' + ')} = ${fmtN(p.a)} ${unit}</span></li>`;
   const ratio = p.A / p.a;
   steps += `<li><b>Scale up.</b> <span class="calc-line">A ÷ a = ${fmtN(p.A)} ÷ ${fmtN(p.a)} ${Math.abs(ratio - Math.round(ratio * 1000) / 1000) > 1e-9 ? '≈' : '='} ${trim(ratio, 3)}</span>. The whole ${whole} is about ${trim(ratio, 1)} times bigger than the part you sampled.</li>`;
@@ -1042,10 +944,10 @@ function recapHTML(p) {
     ${ruleHTML()}
     ${calcHTML()}
     <div class="calc">
-      <div class="row"><label for="fM">M = tagged on day 1<small>How many you tagged</small></label><input class="num" id="fM" inputmode="numeric" autocomplete="off"><div class="fb" id="ffM"></div></div>
-      <div class="row"><label for="fn">n = total in the second catch<small>${multi ? 'Add the three net totals' : 'The number caught, shown on the net'}</small></label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
-      <div class="row"><label for="fm">m = tagged in the second catch<small>${multi ? 'Add the three net totals' : 'The number tagged, shown on the net'}</small></label><input class="num" id="fm" inputmode="numeric" autocomplete="off"><div class="fb" id="ffm"></div></div>
-      <div class="row"><label for="fN">N = (M / m) × n<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
+      <div class="row"><label for="fM">${vlab('M', 'tagged on day 1', 'How many you tagged')}</label><input class="num" id="fM" inputmode="numeric" autocomplete="off"><div class="fb" id="ffM"></div></div>
+      <div class="row"><label for="fn">${vlab('n', 'total in the second catch', multi ? 'Add the three net totals' : 'The number caught, shown on the net')}</label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
+      <div class="row"><label for="fm">${vlab('m', 'tagged in the second catch', multi ? 'Add the three net totals' : 'The number tagged, shown on the net')}</label><input class="num" id="fm" inputmode="numeric" autocomplete="off"><div class="fb" id="ffm"></div></div>
+      <div class="row"><label for="fN">${state.test ? 'N' : 'N = (M / m) × n'}<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
     </div>
     <p class="msg" id="msg" role="alert"></p>
     <div class="actions"><button type="button" class="btn primary" id="checkBtn">Check my work</button></div>
@@ -1292,7 +1194,7 @@ function formulaHTML() {
   const vars = m === 'mark'
     ? ['<b>N</b> estimated population', '<b>M</b> tagged on day 1', '<b>n</b> total in second catch', '<b>m</b> tagged in second catch']
     : ['<b>N</b> estimated population', `<b>A</b> total ${w}${m === 'liquid' ? ' (mL)' : ''}`, `<b>n</b> number counted`, `<b>a</b> ${w} sampled${m === 'liquid' ? ' (mL)' : ''}`];
-  return `<div class="eq">${eq}</div><ul class="vars">${vars.map(v => `<li>${v}</li>`).join('')}</ul><p class="round">Round your final answer to 1 decimal place (like 245.0).</p>`;
+  return `<div class="eq">${eq}</div>${state.test ? '' : `<ul class="vars">${vars.map(v => `<li>${v}</li>`).join('')}</ul>`}<p class="round">Round your final answer to 1 decimal place (like 245.0).</p>`;
 }
 
 function render() {
