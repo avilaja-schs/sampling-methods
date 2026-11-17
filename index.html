@@ -72,7 +72,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--frame); out
 .controls .spacer { flex: 1; }
 .controls.tests { align-items: center; }
 .ver { margin: 4px 0 0; color: var(--muted); font-size: 0.8rem; text-align: center; }
-.btn.yellow { background: var(--frame); border-color: var(--frame); color: #14282a; font-size: 1.08rem; padding: 12px 26px; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+.btn.yellow { margin-left: auto; background: var(--frame); border-color: var(--frame); color: #14282a; font-size: 1.08rem; padding: 12px 26px; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
 .btn.yellow[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
 .dots { display: flex; gap: 6px; margin-top: 8px; }
 .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); background: var(--chip); }
@@ -233,7 +233,6 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
     <button type="button" class="btn primary" id="newBtn">New problem</button>
   </section>
   <section class="controls tests" aria-label="Tests">
-    <button type="button" class="btn yellow" data-test="cert" aria-pressed="false">Test practice</button>
     <div class="ctrl">
       <span class="ctrl-label" id="lblTest">Test yourself</span>
       <div class="seg test" role="group" aria-labelledby="lblTest" id="testSeg">
@@ -242,6 +241,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
       </div>
     </div>
     <p class="testnote"><b>Test practice:</b> 10 questions, miss only one, earn a certificate. The other two tests: 5 questions, easy and medium. Every box has to be right for a question to count.</p>
+    <button type="button" class="btn yellow" data-test="cert" aria-pressed="false">Test practice</button>
   </section>
   <div class="card testbar" id="testbar" hidden></div>
 
