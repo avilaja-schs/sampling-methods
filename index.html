@@ -72,6 +72,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--frame); out
 .controls .spacer { flex: 1; }
 .controls.tests { align-items: center; }
 .ver { margin: 4px 0 0; color: var(--muted); font-size: 0.8rem; text-align: center; }
+.btn.yellow { background: var(--frame); border-color: var(--frame); color: #14282a; font-size: 1.08rem; padding: 12px 26px; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+.btn.yellow[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
+.dots { display: flex; gap: 6px; margin-top: 8px; }
+.dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); background: var(--chip); }
+.dot.ok { background: var(--good); border-color: var(--good); } .dot.no { background: var(--bad); border-color: var(--bad); } .dot.cur { border-color: var(--ink); }
+.certrow { display: grid; gap: 4px; margin: 8px 0; }
+.certrow label { font-weight: 600; }
+.txt { font-family: var(--font); font-weight: 600; }
+.fbmsg { margin-top: 10px; padding: 8px 12px; border-radius: 10px; font-weight: 600; background: var(--chip); }
+.fbmsg.good { background: var(--good-bg); color: var(--good); } .fbmsg.bad { background: var(--bad-bg); color: var(--bad); }
+.copy-preview { display: block; max-width: 100%; margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; }
 .testnote { margin: 0; color: var(--muted); font-size: 0.92rem; align-self: end; padding-bottom: 8px; }
 .seg.test button[aria-pressed="true"] { background: var(--frame); color: #14282a; }
 .testbar { font-size: 0.98rem; border-left: 6px solid var(--frame); }
@@ -222,6 +233,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
     <button type="button" class="btn primary" id="newBtn">New problem</button>
   </section>
   <section class="controls tests" aria-label="Tests">
+    <button type="button" class="btn yellow" data-test="cert" aria-pressed="false">Test practice</button>
     <div class="ctrl">
       <span class="ctrl-label" id="lblTest">Test yourself</span>
       <div class="seg test" role="group" aria-labelledby="lblTest" id="testSeg">
@@ -229,7 +241,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
         <button type="button" data-test="mark" aria-pressed="false">Mark and recapture test</button>
       </div>
     </div>
-    <p class="testnote">5 questions, easy and medium. Every box has to be right for the question to count.</p>
+    <p class="testnote"><b>Test practice:</b> 10 questions, miss only one, earn a certificate. The other two tests: 5 questions, easy and medium. Every box has to be right for a question to count.</p>
   </section>
   <div class="card testbar" id="testbar" hidden></div>
 
@@ -241,7 +253,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
     </section>
     <section class="work-col" id="work" aria-label="Worksheet"></section>
   </main>
-  <p class="ver">Version: each quadrat is 1 m² · 2026-10-15b</p>
+  <p class="ver">Version: each quadrat is 1 m² · 2026-10-16</p>
 </div>
 
 <script>
@@ -1072,7 +1084,7 @@ const TEST_LEN = 5;
 const MODE_NAME = { quad: 'Quadrat', liquid: 'Liquid sample', mark: 'Mark-recapture' };
 const LVL_NAME = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 let cf = 0;
-function confetti() {
+function confetti(big) {
   if (REDUCE()) return;
   let cv = $('#confetti');
   if (!cv) { cv = document.createElement('canvas'); cv.id = 'confetti'; cv.setAttribute('aria-hidden', 'true'); cv.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1100'; document.body.appendChild(cv); }
@@ -1080,7 +1092,7 @@ function confetti() {
   const dpr = window.devicePixelRatio || 1, Wd = innerWidth, Hd = innerHeight;
   cv.width = Wd * dpr; cv.height = Hd * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const cols = ['#1d7f47', '#f5b301', '#e0218a', '#0e6f6a', '#3b82f6', '#ff7a1a', '#ffffff'];
-  const parts = Array.from({ length: 180 }, () => ({ x: rnd() * Wd, y: -20 - rnd() * Hd * 0.7, vx: (rnd() - .5) * 2, vy: 2 + rnd() * 3.5, r: rnd() * 6.28, vr: (rnd() - .5) * .3, w: 6 + rnd() * 6, h: 9 + rnd() * 8, c: pick(cols), wob: rnd() * 6.28 }));
+  const parts = Array.from({ length: big ? 420 : 180 }, () => ({ x: rnd() * Wd, y: -20 - rnd() * Hd * 0.7, vx: (rnd() - .5) * 2, vy: 2 + rnd() * 3.5, r: rnd() * 6.28, vr: (rnd() - .5) * .3, w: 6 + rnd() * 6, h: 9 + rnd() * 8, c: pick(cols), wob: rnd() * 6.28 }));
   const t0 = performance.now(); cancelAnimationFrame(cf);
   const step = now => {
     ctx.clearRect(0, 0, Wd, Hd); let alive = 0;
@@ -1089,7 +1101,7 @@ function confetti() {
       if (q.y < Hd + 30) alive++;
       ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.r); ctx.fillStyle = q.c; ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); ctx.restore();
     });
-    if (alive && now - t0 < 7000) cf = requestAnimationFrame(step); else ctx.clearRect(0, 0, Wd, Hd);
+    if (alive && now - t0 < (big ? 9500 : 7000)) cf = requestAnimationFrame(step); else ctx.clearRect(0, 0, Wd, Hd);
   };
   cf = requestAnimationFrame(step);
 }
@@ -1133,10 +1145,18 @@ function markIssues(p, v) {
   return out;
 }
 
+const CERT_LEN = 10, CERT_HARD = 3, CERT_MISSES = 1;
+const TEST_NAME = { sampling: 'Random sampling test', mark: 'Mark and recapture test', cert: 'Test practice' };
 function updateTestBar(done) {
   const t = state.test, bar = $('#testbar');
   bar.hidden = !t; if (!t) return;
-  bar.innerHTML = `<b>${t.kind === 'mark' ? 'Mark and recapture test' : 'Random sampling test'}</b> · ${done ? 'Finished' : `Question ${t.i} of ${TEST_LEN}`} · Score ${t.score} · Round N to 1 decimal place`;
+  const prog = done ? 'Finished' : `Question ${t.i} of ${t.len}`;
+  if (t.kind === 'cert') {
+    const dots = Array.from({ length: t.len }, (_, i) => `<span class="dot ${i < t.res.length ? (t.res[i].ok ? 'ok' : 'no') : (i === t.res.length && !done && !t.over ? 'cur' : '')}"></span>`).join('');
+    bar.innerHTML = `<b>${TEST_NAME.cert}</b> · ${prog} · Misses: ${t.misses} of ${CERT_MISSES} allowed · Round your final answer to 1 decimal place<div class="dots" aria-hidden="true">${dots}</div>`;
+    return;
+  }
+  bar.innerHTML = `<b>${TEST_NAME[t.kind]}</b> · ${prog} · Score ${t.score} · Round your final answer to 1 decimal place`;
 }
 function syncControls() {
   const t = state.test;
@@ -1149,41 +1169,102 @@ function syncControls() {
 function startTest(kind) {
   closePopup();
   if (!state.test) state.pLevel = state.level;
-  const lv = shuffle(['easy', 'easy', 'medium', 'medium', pick(['easy', 'medium'])]);
-  const md = kind === 'mark' ? Array(TEST_LEN).fill('mark') : shuffle(['quad', 'quad', 'liquid', 'liquid', pick(['quad', 'liquid'])]);
-  state.test = { kind, i: 0, score: 0, res: [], lv, md };
+  let md, lv;
+  if (kind === 'cert') {
+    const ord = shuffle(['quad', 'liquid', 'mark']);
+    md = shuffle([...Array(4).fill(ord[0]), ...Array(3).fill(ord[1]), ...Array(3).fill(ord[2])]);
+    lv = shuffle([...Array(CERT_LEN - CERT_HARD).fill('medium'), ...Array(CERT_HARD).fill('hard')]);
+  } else {
+    lv = shuffle(['easy', 'easy', 'medium', 'medium', pick(['easy', 'medium'])]);
+    md = kind === 'mark' ? Array(TEST_LEN).fill('mark') : shuffle(['quad', 'quad', 'liquid', 'liquid', pick(['quad', 'liquid'])]);
+  }
+  state.test = { kind, len: kind === 'cert' ? CERT_LEN : TEST_LEN, i: 0, score: 0, misses: 0, over: false, res: [], lv, md };
   testNextQ();
 }
 function testNextQ() {
   const t = state.test; if (!t) return;
-  if (t.i >= TEST_LEN) { testSummary(); return; }
+  if (t.over) { startTest(t.kind); return; }
+  if (t.i >= t.len) { testSummary(); return; }
   state.mode = t.md[t.i]; state.level = t.lv[t.i]; t.i++;
   syncControls(); newProblem();
 }
 function testResult(ok, issues, correctLine, correctN) {
   const t = state.test; if (!t) return;
+  const cert = t.kind === 'cert';
   t.res.push({ label: `${MODE_NAME[state.mode]} (${LVL_NAME[state.level]})`, ok });
-  if (ok) t.score++;
+  if (ok) t.score++; else t.misses++;
+  if (cert && t.misses > CERT_MISSES) t.over = true;
   updateTestBar();
-  const last = t.i >= TEST_LEN, btn = last ? 'See my score' : 'Next question';
+  const last = t.i >= t.len;
+  const btn = t.over ? 'Start again' : last ? (cert ? 'Get my certificate' : 'See my score') : 'Next question';
   $('#after').innerHTML = `<div class="card"><div class="actions"><button type="button" class="btn primary testNext">${btn}</button></div></div>`;
   if (ok) {
     showPopup(true, 'Correct!', `<p>All your answers are right.</p><p class="pbig">N = ${correctN}</p><p>Score: ${t.score} of ${t.i}</p>`, btn, testNextQ);
-    confetti();
+    if (!cert) confetti();
   } else {
-    showPopup(false, 'Not quite', `<p>Here is what went wrong:</p><ul>${issues.map(x => `<li>${x}</li>`).join('')}</ul><p>The correct answer is <b>${correctLine}</b>.</p>`, btn, testNextQ);
+    let extra = '';
+    if (cert) extra = t.over
+      ? `<p><strong>That is your second miss, so this try is over.</strong> You can miss only one question and still earn the certificate. Start again for new questions.</p>`
+      : `<p><strong>That is your one allowed miss.</strong> Miss one more and this try ends.</p>`;
+    showPopup(false, t.over ? 'This try is over' : 'Not quite', `<p>Here is what went wrong:</p><ul>${issues.map(x => `<li>${x}</li>`).join('')}</ul><p>The correct answer is <b>${correctLine}</b>.</p>${extra}`, btn, testNextQ);
   }
 }
 function testSummary() {
   const t = state.test; updateTestBar(true);
-  $('#story').innerHTML = `<p><b>Test complete.</b> You got ${t.score} of ${TEST_LEN} right.</p><p>Take it again for new problems, or go back to practice.</p>`;
+  if (t.kind === 'cert') { certPass(); return; }
+  $('#story').innerHTML = `<p><b>Test complete.</b> You got ${t.score} of ${t.len} right.</p><p>Take it again for new problems, or go back to practice.</p>`;
   $('#scene').innerHTML = ''; $('#legend').textContent = '';
-  const msg = t.score === TEST_LEN ? 'Perfect score!' : t.score >= 4 ? 'Great work.' : t.score >= 3 ? 'Good start. Practice the steps you missed.' : 'Keep practicing. Use the practice buttons for a worked walkthrough.';
-  $('#work').innerHTML = `<div class="card"><h2>${t.score} / ${TEST_LEN}</h2><p class="hint">${msg}</p>
+  const msg = t.score === t.len ? 'Perfect score!' : t.score >= 4 ? 'Great work.' : t.score >= 3 ? 'Good start. Practice the steps you missed.' : 'Keep practicing. Use the practice buttons for a worked walkthrough.';
+  $('#work').innerHTML = `<div class="card"><h2>${t.score} / ${t.len}</h2><p class="hint">${msg}</p>
     <ul class="sumlist">${t.res.map((r, i) => `<li><span>Question ${i + 1}: ${r.label}</span><span class="${r.ok ? 'ok' : 'no'}">${r.ok ? '✓ Correct' : '✗ Missed'}</span></li>`).join('')}</ul>
     <div class="actions" style="margin-top:14px"><button type="button" class="btn primary" data-test="${t.kind}">Take the test again</button><button type="button" class="btn" data-mode="quad">Back to practice</button></div></div>`;
-  if (t.score === TEST_LEN) confetti();
+  if (t.score === t.len) confetti();
   window.scrollTo({ top: 0 });
+}
+
+/* ---------- Certificate (same idea as Population Detective: name + period, copy as a picture) ---------- */
+function certPass() {
+  const t = state.test; t.finishedAt = new Date();
+  $('#story').innerHTML = `<p><b>You passed Test practice!</b> ${t.score} of ${t.len} right${t.misses ? ' (you used your one allowed miss)' : ''}.</p><p>Type your name and period, then copy your certificate and paste it where your teacher asked.</p>`;
+  $('#scene').innerHTML = ''; $('#legend').textContent = '';
+  $('#work').innerHTML = `<div class="card" id="certCard"><h2>Certificate of Completion</h2>
+    <p class="hint">Test practice: Random Sampling and Mark-Recapture. ${t.score} of ${t.len} correct.</p>
+    <div class="certrow"><label for="certName">Your name</label><input class="num txt" id="certName" type="text" autocomplete="off" value="${esc(state.certName || '')}"></div>
+    <div class="certrow"><label for="certPeriod">Period</label><input class="num txt" id="certPeriod" type="text" autocomplete="off" value="${esc(state.certPeriod || '')}"></div>
+    <div class="actions"><button type="button" class="btn primary" id="certCopy">Copy certificate</button><button type="button" class="btn" data-test="cert">Take it again</button><button type="button" class="btn" data-mode="quad">Back to practice</button></div>
+    <div id="certMsg"></div></div>`;
+  confetti(true);
+  const card = $('#certCard'); if (card) card.scrollIntoView({ behavior: REDUCE() ? 'auto' : 'smooth', block: 'start' });
+}
+function certCanvas() {
+  const t = state.test, W = 1600, H = 1000, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d'), font = (w, sz) => `${w} ${sz}px "Segoe UI", Arial, sans-serif`;
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#0e6f6a'; ctx.lineWidth = 14; ctx.strokeRect(30, 30, W - 60, H - 60);
+  ctx.strokeStyle = '#f5b301'; ctx.lineWidth = 4; ctx.strokeRect(58, 58, W - 116, H - 116);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#0e6f6a'; ctx.font = font(700, 70); ctx.fillText('Certificate of Completion', W / 2, 180, W - 200);
+  ctx.fillStyle = '#566b68'; ctx.font = font(500, 36); ctx.fillText('Test Practice: Random Sampling and Mark-Recapture', W / 2, 245, W - 200);
+  ctx.fillStyle = '#14282a'; ctx.font = font(700, 76); ctx.fillText(state.certName || '—', W / 2, 365, W - 240);
+  ctx.strokeStyle = '#cdd9d3'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(360, 392); ctx.lineTo(W - 360, 392); ctx.stroke();
+  ctx.fillStyle = '#566b68'; ctx.font = font(500, 34);
+  const when = t.finishedAt ? t.finishedAt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
+  ctx.fillText(`Period: ${state.certPeriod || '—'}   ·   Finished: ${when}`, W / 2, 450, W - 200);
+  ctx.fillStyle = '#1d7f47'; ctx.font = font(700, 52); ctx.fillText(`Score: ${t.score} of ${t.len} (${Math.round(t.score / t.len * 100)}%)`, W / 2, 540);
+  ctx.fillStyle = '#566b68'; ctx.font = font(500, 30); ctx.fillText('Topics practiced', W / 2, 610);
+  ctx.textAlign = 'left'; ctx.font = font(500, 34);
+  ['Quadrat sampling', 'Liquid sampling', 'Mark-recapture'].forEach((nm, i) => { const y = 670 + i * 56; ctx.fillStyle = '#1d7f47'; ctx.fillText('✓', 560, y); ctx.fillStyle = '#14282a'; ctx.fillText(nm, 610, y, 520); });
+  ctx.textAlign = 'center'; ctx.fillStyle = '#566b68'; ctx.font = font(500, 28); ctx.fillText('Sample & Estimate', W / 2, H - 92);
+  return c;
+}
+function copyCert() {
+  const box = $('#certMsg'); if (!box) return;
+  if (!state.certName) { box.innerHTML = '<div class="fbmsg bad" role="status">Type your name first.</div>'; $('#certName').focus(); return; }
+  const canvas = certCanvas(); const url = canvas.toDataURL('image/png');
+  const show = ok => { box.innerHTML = `<div class="fbmsg ${ok ? 'good' : ''}" role="status">${ok ? 'Certificate copied! Paste it where your teacher asked (Ctrl+V).' : 'Your browser blocked copying. Right-click the picture below and choose Copy image.'}</div><img class="copy-preview" alt="Your certificate" src="${url}">`; };
+  try { navigator.clipboard.write([new ClipboardItem({ 'image/png': new Promise(res => canvas.toBlob(res, 'image/png')) })]).then(() => show(true)).catch(() => show(false)); }
+  catch (e) { show(false); }
 }
 
 /* ---------- Rendering ---------- */
@@ -1239,6 +1320,7 @@ document.addEventListener('click', e => {
   const lb = e.target.closest('[data-level]');
   if (lb) { state.level = lb.dataset.level; syncControls(); newProblem(); return; }
   if (e.target.closest('.testNext')) { testNextQ(); return; }
+  if (e.target.closest('#certCopy')) { copyCert(); return; }
   if (e.target.closest('#newBtn') || e.target.closest('#nextBtn')) { newProblem(); return; }
   const ck = e.target.closest('.ck');
   if (ck) { calcPress(ck.dataset.k); return; }
@@ -1246,14 +1328,18 @@ document.addEventListener('click', e => {
   if (u) u.classList.toggle('seen');
 });
 document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('calcbox')) calcOpen = e.target.open; }, true);
-document.addEventListener('input', e => { if (e.target.id === 'cexpr') { e.target.dataset.fresh = '0'; calcPreview(); } });
+document.addEventListener('input', e => {
+  if (e.target.id === 'cexpr') { e.target.dataset.fresh = '0'; calcPreview(); }
+  if (e.target.id === 'certName') state.certName = e.target.value.trim();
+  if (e.target.id === 'certPeriod') state.certPeriod = e.target.value.trim();
+});
 document.addEventListener('keydown', e => {
   if (e.target.id === 'cexpr' && e.key === 'Enter') { e.preventDefault(); calcPress('='); return; } if (e.key === 'Enter' && e.target.classList.contains('num')) { const b = $('#checkBtn'); if (b && !b.disabled) b.click(); } });
 
 buildDefs();
 syncControls();
 newProblem();
-window.__test = { testNextQ, startTest, state, newProblem, checkGrid, checkMark, release, buildGrid, buildMark };
+window.__test = { certCanvas, testNextQ, startTest, state, newProblem, checkGrid, checkMark, release, buildGrid, buildMark };
 })();
 </script>
 </body>
