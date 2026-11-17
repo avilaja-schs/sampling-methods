@@ -83,6 +83,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--frame); out
 .fbmsg { margin-top: 10px; padding: 8px 12px; border-radius: 10px; font-weight: 600; background: var(--chip); }
 .fbmsg.good { background: var(--good-bg); color: var(--good); } .fbmsg.bad { background: var(--bad-bg); color: var(--bad); }
 .copy-preview { display: block; max-width: 100%; margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; }
+.wptag { display: inline-block; background: var(--frame); color: #14282a; font-weight: 700; border-radius: 999px; padding: 2px 12px; font-size: 0.82rem; margin: 0 0 8px; }
+.wp { font-size: 1.1rem; line-height: 1.65; }
 .testnote { margin: 0; color: var(--muted); font-size: 0.92rem; align-self: end; padding-bottom: 8px; }
 .seg.test button[aria-pressed="true"] { background: var(--frame); color: #14282a; }
 .testbar { font-size: 0.98rem; border-left: 6px solid var(--frame); }
@@ -229,6 +231,13 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
         <button type="button" data-level="hard" aria-pressed="false">Hard</button>
       </div>
     </div>
+    <div class="ctrl" id="fmtCtrl">
+      <span class="ctrl-label" id="lblFmt">Format</span>
+      <div class="seg" role="group" aria-labelledby="lblFmt" id="fmtSeg">
+        <button type="button" data-fmt="pic" aria-pressed="true">Pictures</button>
+        <button type="button" data-fmt="words" aria-pressed="false">Word problems</button>
+      </div>
+    </div>
     <span class="spacer"></span>
     <button type="button" class="btn primary" id="newBtn">New problem</button>
   </section>
@@ -240,7 +249,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
         <button type="button" data-test="mark" aria-pressed="false">Mark and recapture test</button>
       </div>
     </div>
-    <p class="testnote"><b>Test practice:</b> 10 questions, miss only one, earn a certificate. The other two tests: 5 questions, easy and medium. Every box has to be right for a question to count.</p>
+    <p class="testnote"><b>Test practice:</b> 10 questions (some are word problems), miss only one, earn a certificate. The other two tests: 5 questions, easy and medium. Every box has to be right for a question to count.</p>
     <button type="button" class="btn yellow" data-test="cert" aria-pressed="false">Test practice</button>
   </section>
   <div class="card testbar" id="testbar" hidden></div>
@@ -253,7 +262,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
     </section>
     <section class="work-col" id="work" aria-label="Worksheet"></section>
   </main>
-  <p class="ver">Version: each quadrat is 1 m² · 2026-10-16</p>
+  <p class="ver">Version: each quadrat is 1 m² · 2026-10-17</p>
 </div>
 
 <script>
@@ -567,7 +576,7 @@ function liquidWork(p) {
 function lessonLiquid(p, Ncorr, err) {
   const ratio = p.A / p.a;
   let steps = '';
-  steps += `<li><b>Read each test tube's count.</b> ${p.counts.map((c, i) => `T${i + 1} = ${c}`).join(', ')}.</li>`;
+  steps += `<li><b>${p.words ? 'Find' : 'Read'} each test tube's count.</b> ${p.counts.map((c, i) => `T${i + 1} = ${c}`).join(', ')}.</li>`;
   steps += `<li><b>Add the counts.</b> <span class="calc-line">n = ${p.counts.join(' + ')} = ${p.n}</span></li>`;
   steps += `<li><b>Add the volume sampled.</b> <span class="calc-line">a = ${p.tubes.map(t => t.v).join(' + ')} = ${p.a} mL</span></li>`;
   steps += `<li><b>Scale up.</b> <span class="calc-line">A ÷ a = ${p.A} ÷ ${p.a} ${Math.abs(ratio - Math.round(ratio * 1000) / 1000) > 1e-9 ? '≈' : '='} ${trim(ratio, 3)}</span>. The flask holds about ${trim(ratio, 1)} times more water than you sampled.</li>`;
@@ -662,7 +671,7 @@ function setField(inp, fbId, ok, html) {
   inp.classList.remove('good', 'bad'); inp.classList.add(ok ? 'good' : 'bad');
   const fb = $('#' + fbId); fb.className = 'fb ' + (ok ? 'good' : 'bad'); fb.innerHTML = html;
 }
-function lockInputs() { document.querySelectorAll('#work input').forEach(i => { i.readOnly = true; }); }
+function lockInputs() { document.querySelectorAll('#work input').forEach(i => { i.readOnly = true; }); const wb = $('#wordBtn'); if (wb) wb.hidden = true; }
 
 function checkGrid() {
   const p = state.prob; if (p.checked) return;
@@ -721,7 +730,7 @@ function lessonGrid(p, Ncorr, err) {
   const isQ = state.mode === 'quad', P = pre(), thing = isQ ? 'quadrat' : 'dip', unit = p.cfg.unit;
   const whole = isQ ? p.hab.name : p.hab.short;
   let steps = '';
-  steps += `<li><b>Read each ${thing}'s count.</b> ${p.rects.map((_, i) => `${P}${i + 1} = ${p.counts[i]}`).join(', ')}.${edgeLesson(p)}</li>`;
+  steps += `<li><b>${p.words ? 'Find' : 'Read'} each ${thing}'s count.</b> ${p.rects.map((_, i) => `${P}${i + 1} = ${p.counts[i]}`).join(', ')}.${p.words ? '' : edgeLesson(p)}</li>`;
   steps += `<li><b>Add the counts.</b> <span class="calc-line">n = ${p.counts.join(' + ')} = ${p.n}</span></li>`;
   steps += `<li><b>Add the ${isQ ? 'area' : 'volume'} sampled.</b> <span class="calc-line">a = ${p.areas.map(fmtN).join(' + ')} = ${fmtN(p.a)} ${unit}</span></li>`;
   const ratio = p.A / p.a;
@@ -854,7 +863,7 @@ function markAnimals(p) {
   let popped = 0;
   for (let k = 1; k <= J; k++) {
     const go = () => {
-      if (state.prob !== p) return;
+      if (state.prob !== p || p.words) return;
       setTag(p, k === J ? p.M : Math.round(p.M * k / J));
       const upto = Math.min(vt.length, per * k);
       for (; popped < upto; popped++) vt[popped].g.classList.add('tagged');
@@ -888,13 +897,13 @@ function release(p) {
   $('#releaseBtn').disabled = true; $('#markBtn').disabled = true;
   const reduce = REDUCE();
   const finish = () => {
-    if (state.prob !== p) return;
+    if (state.prob !== p || p.words) return;
     leavers.forEach(a => a.g.remove());
     vis2.forEach(a => { a.x = a.finalX; a.y = a.finalY; a.path = null; });
     p.vis1 = vis2; p.active = vis2.slice();
     $('#tagCount').textContent = `${p.M} tagged and released`;
     setTimeout(() => {
-      if (state.prob !== p) return;
+      if (state.prob !== p || p.words) return;
       $('#recap').innerHTML = recapHTML(p);
       $('#checkBtn').onclick = checkMark;
       $('#recap').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
@@ -1163,7 +1172,8 @@ function syncControls() {
   document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', !t && b.dataset.mode === state.mode));
   document.querySelectorAll('[data-level]').forEach(b => b.setAttribute('aria-pressed', b.dataset.level === state.level));
   document.querySelectorAll('[data-test]').forEach(b => b.setAttribute('aria-pressed', !!t && b.dataset.test === t.kind));
-  $('#levelCtrl').hidden = !!t; $('#newBtn').hidden = !!t;
+  document.querySelectorAll('[data-fmt]').forEach(b => b.setAttribute('aria-pressed', (b.dataset.fmt === 'words') === !!state.words));
+  $('#levelCtrl').hidden = !!t; $('#newBtn').hidden = !!t; $('#fmtCtrl').hidden = !!t;
   updateTestBar();
 }
 function startTest(kind) {
@@ -1178,14 +1188,17 @@ function startTest(kind) {
     lv = shuffle(['easy', 'easy', 'medium', 'medium', pick(['easy', 'medium'])]);
     md = kind === 'mark' ? Array(TEST_LEN).fill('mark') : shuffle(['quad', 'quad', 'liquid', 'liquid', pick(['quad', 'liquid'])]);
   }
-  state.test = { kind, len: kind === 'cert' ? CERT_LEN : TEST_LEN, i: 0, score: 0, misses: 0, over: false, res: [], lv, md };
+  const nw = kind === 'cert' ? ri(2, 4) : 0; // Test practice: 2 to 4 of the 10 are word problems
+  const wf = shuffle([...Array(nw).fill(true), ...Array(kind === 'cert' ? CERT_LEN - nw : 0).fill(false)]);
+  state.curWords = false;
+  state.test = { kind, len: kind === 'cert' ? CERT_LEN : TEST_LEN, i: 0, score: 0, misses: 0, over: false, res: [], lv, md, wf };
   testNextQ();
 }
 function testNextQ() {
   const t = state.test; if (!t) return;
   if (t.over) { startTest(t.kind); return; }
   if (t.i >= t.len) { testSummary(); return; }
-  state.mode = t.md[t.i]; state.level = t.lv[t.i]; t.i++;
+  state.mode = t.md[t.i]; state.level = t.lv[t.i]; state.curWords = !!(t.wf && t.wf[t.i]); t.i++;
   syncControls(); newProblem();
 }
 function testResult(ok, issues, correctLine, correctN) {
@@ -1254,7 +1267,7 @@ function certCanvas() {
   ctx.fillStyle = '#1d7f47'; ctx.font = font(700, 52); ctx.fillText(`Score: ${t.score} of ${t.len} (${Math.round(t.score / t.len * 100)}%)`, W / 2, 540);
   ctx.fillStyle = '#566b68'; ctx.font = font(500, 30); ctx.fillText('Topics practiced', W / 2, 610);
   ctx.textAlign = 'left'; ctx.font = font(500, 34);
-  ['Quadrat sampling', 'Liquid sampling', 'Mark-recapture'].forEach((nm, i) => { const y = 670 + i * 56; ctx.fillStyle = '#1d7f47'; ctx.fillText('✓', 560, y); ctx.fillStyle = '#14282a'; ctx.fillText(nm, 610, y, 520); });
+  ['Quadrat sampling', 'Liquid sampling', 'Mark-recapture'].concat(t.wf && t.wf.some(Boolean) ? ['Word problems'] : []).forEach((nm, i) => { const y = 670 + i * 56; ctx.fillStyle = '#1d7f47'; ctx.fillText('✓', 560, y); ctx.fillStyle = '#14282a'; ctx.fillText(nm, 610, y, 520); });
   ctx.textAlign = 'center'; ctx.fillStyle = '#566b68'; ctx.font = font(500, 28); ctx.fillText('Sample & Estimate', W / 2, H - 92);
   return c;
 }
@@ -1265,6 +1278,114 @@ function copyCert() {
   const show = ok => { box.innerHTML = `<div class="fbmsg ${ok ? 'good' : ''}" role="status">${ok ? 'Certificate copied! Paste it where your teacher asked (Ctrl+V).' : 'Your browser blocked copying. Right-click the picture below and choose Copy image.'}</div><img class="copy-preview" alt="Your certificate" src="${url}">`; };
   try { navigator.clipboard.write([new ClipboardItem({ 'image/png': new Promise(res => canvas.toBlob(res, 'image/png')) })]).then(() => show(true)).catch(() => show(false)); }
   catch (e) { show(false); }
+}
+
+/* ---------- Word problems (no pictures). Facts are shuffled so A or M is not always first. ---------- */
+const ORD = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
+const wlist = a => a.length < 3 ? a.join(' and ') : a.slice(0, -1).join(', ') + ', and ' + a[a.length - 1];
+const ordSentence = (counts, pl, noun) => {
+  const parts = counts.map((c, i) => i === 0 ? `in the first ${noun} they counted ${c} ${pl}` : `in the ${ORD[i]} ${c}`);
+  const last = parts.pop();
+  return cap1(parts.join(', ') + (parts.length ? ', and ' : '') + last) + '.';
+};
+function wordsGrid(p) {
+  const pl = p.pl, hab = p.hab.name, A = fmtN(p.A), k = p.k;
+  const intro = `Students are using quadrats to study ${pl} on a ${hab}.`;
+  const secA = pick([`The ${hab} covers ${A} m².`, `The whole ${hab} has an area of ${A} m².`, `Altogether, the ${hab} measures ${A} m².`]);
+  const secQ = pick([`They placed ${k} quadrats at random spots, and each quadrat is 1 m².`, `${k} random quadrats were sampled. Each one covers 1 m².`, `The class used ${k} quadrats, each 1 m², at random places.`]);
+  const secC = rnd() < 0.5 ? ordSentence(p.counts, pl, 'quadrat') : pick([`The quadrats held ${wlist(p.counts)} ${pl}, in that order.`, `Counting the quadrats one by one, they found ${wlist(p.counts)} ${pl}.`]);
+  const q = `About how many ${pl} live on the whole ${hab}?`;
+  return [intro, ...shuffle([secA, secQ, secC]), q].join(' ');
+}
+function wordsLiquid(p) {
+  const pl = p.pl, A = p.A, k = p.k;
+  const intro = `A class is studying ${pl} in a flask of ${p.water.name}. The water in the flask is well mixed.`;
+  const secA = pick([`The flask holds ${A} mL of water.`, `There are ${A} mL of water in the flask altogether.`, `In total, the flask contains ${A} mL.`]);
+  const vols = p.tubes.map(t => `${t.v} mL`);
+  const secV = pick([`${k} test tubes were filled from the flask, holding ${wlist(vols)} of water.`, `They filled ${k} test tubes with ${wlist(vols)}, in that order.`]);
+  const secC = rnd() < 0.5 ? ordSentence(p.counts, pl, 'test tube') : pick([`The test tubes contained ${wlist(p.counts)} ${pl}, in that order.`, `After counting, they found ${wlist(p.counts)} ${pl} in the tubes, in the same order.`]);
+  const q = `About how many ${pl} are in the whole flask?`;
+  return [intro, ...shuffle([secA, secV, secC]), q].join(' ');
+}
+function wordsMark(p) {
+  const pl = SP[p.place.sp], place = p.place.name, L = ['A', 'B', 'C'];
+  const intro = `Researchers use mark-recapture to study ${pl} in ${place}.`;
+  const secM = pick([`On day 1, they tagged and released ${p.M} ${pl}.`, `They caught ${p.M} ${pl} on day 1, put a tag on each one, and let them go.`]);
+  let facts;
+  if (p.nets.length > 1) {
+    const nets = p.nets.map((ns, i) => `Net ${L[i]} caught ${ns.length} ${pl}, and ${ns.filter(a => a.tagged).length} of them had tags.`);
+    const at = ri(0, nets.length);
+    facts = nets.slice(0, at).concat([secM], nets.slice(at));
+    facts.unshift(`On day 2, after the tagged ${pl} mixed back in, they set three nets.`);
+  } else {
+    const n = p.nets[0].length, m = p.nets[0].filter(a => a.tagged).length;
+    const secN = pick([`On day 2, a net caught ${n} ${pl}.`, `A second sample on day 2 caught ${n} ${pl}.`]);
+    const secm = pick([`Of the ${pl} caught on day 2, ${m} had tags.`, `${m} of the ${pl} in the day 2 sample were tagged.`]);
+    facts = shuffle([secM, secN, secm]);
+  }
+  return [intro, ...facts, `About how many ${pl} live there?`].join(' ');
+}
+function toWords(p) {
+  p.words = true;
+  if (p.kind === 'mark') {
+    if (!p.nets) {
+      let nets;
+      for (let t = 0; t < 300; t++) {
+        let remN = p.N, remT = p.M; nets = [];
+        p.netSizes.forEach(sz => { const arr = []; for (let i = 0; i < sz; i++) { const tg = rnd() < remT / remN; arr.push({ tagged: tg }); remN--; if (tg) remT--; } nets.push(arr); });
+        if (sum(nets.map(ns => ns.filter(a => a.tagged).length)) >= p.cfg.minM) break;
+      }
+      p.nets = nets;
+    }
+    p.phase = 'recap'; p.marked = true;
+  }
+  p.wt = p.kind === 'mark' ? wordsMark(p) : p.kind === 'liquid' ? wordsLiquid(p) : wordsGrid(p);
+  return p;
+}
+function wordWorkGrid(p) {
+  const liquid = p.kind === 'liquid', unit = p.cfg.unit, thing = liquid ? 'test tube' : 'quadrat', aWord = liquid ? 'volume' : 'area';
+  return `<div class="card"><h2>Calculate</h2>
+    <p class="hint">Read the problem and find the numbers you need.${state.test ? '' : ` A is the whole ${aWord}, a is the ${aWord} you sampled, and n is the number counted. You add up the samples yourself.`}</p>
+    ${ruleHTML()}
+    ${calcHTML()}
+    <div class="calc">
+      <div class="row"><label for="fa">${vlab('a', 'total ' + aWord + ' sampled', 'Add up all the ' + thing + 's. Unit: ' + unit)}</label><input class="num" id="fa" inputmode="decimal" autocomplete="off"><div class="fb" id="ffa"></div></div>
+      <div class="row"><label for="fn">${vlab('n', 'total number counted', 'Add the counts from every ' + thing)}</label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
+      <div class="row"><label for="fN">${state.test ? 'N' : 'N = (A / a) × n'}<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
+    </div>
+    <p class="msg" id="msg" role="alert"></p>
+    <div class="actions"><button type="button" class="btn primary" id="checkBtn">Check my work</button></div>
+  </div>
+  <div id="after"></div>`;
+}
+function wordWorkMark(p) {
+  const multi = p.nets.length > 1;
+  return `<div class="card"><h2>Calculate</h2>
+    <p class="hint">Read the problem and find the numbers you need.${state.test ? '' : ` M is the number tagged on day 1, n is the total caught the second time, and m is how many of those were tagged.${multi ? ' Add up the nets.' : ''}`}</p>
+    ${ruleHTML()}
+    ${calcHTML()}
+    <div class="calc">
+      <div class="row"><label for="fM">${vlab('M', 'tagged on day 1', 'How many were tagged')}</label><input class="num" id="fM" inputmode="numeric" autocomplete="off"><div class="fb" id="ffM"></div></div>
+      <div class="row"><label for="fn">${vlab('n', 'total in the second catch', multi ? 'Add the three nets' : 'The number caught')}</label><input class="num" id="fn" inputmode="numeric" autocomplete="off"><div class="fb" id="ffn"></div></div>
+      <div class="row"><label for="fm">${vlab('m', 'tagged in the second catch', multi ? 'Add the three nets' : 'The number tagged')}</label><input class="num" id="fm" inputmode="numeric" autocomplete="off"><div class="fb" id="ffm"></div></div>
+      <div class="row"><label for="fN">${state.test ? 'N' : 'N = (M / m) × n'}<small>Round to 1 decimal place, like 245.0</small></label><input class="num" id="fN" inputmode="decimal" autocomplete="off"><div class="fb" id="ffN"></div></div>
+    </div>
+    <p class="msg" id="msg" role="alert"></p>
+    <div class="actions"><button type="button" class="btn primary" id="checkBtn">Check my work</button></div>
+  </div>
+  <div id="after"></div>`;
+}
+function renderWords(p) {
+  cancelAnimationFrame(raf);
+  $('#story').innerHTML = `<span class="wptag">Word problem</span><p class="wp">${p.wt}</p>`;
+  $('#scene').innerHTML = ''; $('#legend').textContent = '';
+  $('#work').innerHTML = p.kind === 'mark' ? wordWorkMark(p) : wordWorkGrid(p);
+  $('#checkBtn').onclick = p.kind === 'mark' ? checkMark : checkGrid;
+}
+function makeWords() {
+  const p = state.prob; if (!p || p.words || p.checked || state.test) return;
+  cancelAnimationFrame(raf); p.anim = null;
+  toWords(p); render();
 }
 
 /* ---------- Rendering ---------- */
@@ -1282,6 +1403,7 @@ function render() {
   const p = state.prob;
   $('#formula').innerHTML = formulaHTML();
   if (!p) return;
+  if (p.words) { renderWords(p); return; }
   if (p.kind === 'liquid') {
     $('#story').innerHTML = storyLiquid(p) + `<p>${LEVEL_NOTE.liquid[state.level]}</p>`;
     $('#scene').innerHTML = sceneLiquid(p);
@@ -1303,10 +1425,12 @@ function render() {
     $('#releaseBtn').onclick = () => release(p);
     startMotion(p);
   }
+  if (!state.test) $('#story').insertAdjacentHTML('beforeend', '<div class="actions" style="margin-top:8px"><button type="button" class="btn" id="wordBtn">Show as a word problem</button></div>');
 }
 
 function newProblem() {
   state.prob = state.mode === 'mark' ? buildMark() : state.mode === 'liquid' ? buildLiquid() : buildGrid();
+  if (state.prob && (state.test ? state.curWords : state.words)) toWords(state.prob);
   render();
   window.scrollTo({ top: 0 });
 }
@@ -1317,6 +1441,9 @@ document.addEventListener('click', e => {
   if (tb) { startTest(tb.dataset.test); return; }
   const mb = e.target.closest('[data-mode]');
   if (mb) { closePopup(); if (state.test) { state.level = state.pLevel || 'easy'; state.test = null; } state.mode = mb.dataset.mode; syncControls(); newProblem(); return; }
+  const fb = e.target.closest('[data-fmt]');
+  if (fb) { state.words = fb.dataset.fmt === 'words'; syncControls(); newProblem(); return; }
+  if (e.target.closest('#wordBtn')) { makeWords(); return; }
   const lb = e.target.closest('[data-level]');
   if (lb) { state.level = lb.dataset.level; syncControls(); newProblem(); return; }
   if (e.target.closest('.testNext')) { testNextQ(); return; }
@@ -1339,7 +1466,7 @@ document.addEventListener('keydown', e => {
 buildDefs();
 syncControls();
 newProblem();
-window.__test = { certCanvas, testNextQ, startTest, state, newProblem, checkGrid, checkMark, release, buildGrid, buildMark };
+window.__test = { toWords, certCanvas, testNextQ, startTest, state, newProblem, checkGrid, checkMark, release, buildGrid, buildMark };
 })();
 </script>
 </body>
