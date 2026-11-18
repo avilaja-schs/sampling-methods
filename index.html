@@ -72,8 +72,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--frame); out
 .controls .spacer { flex: 1; }
 .controls.tests { align-items: center; }
 .ver { margin: 4px 0 0; color: var(--muted); font-size: 0.8rem; text-align: center; }
-.btn.yellow { margin-left: auto; background: var(--frame); border-color: var(--frame); color: #14282a; font-size: 1.08rem; padding: 12px 26px; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+.btn.yellow { background: var(--frame); border-color: var(--frame); color: #14282a; font-size: 1.08rem; padding: 12px 26px; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
 .btn.yellow[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
+.titlerow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.btn.yellow.pill { text-transform: uppercase; letter-spacing: 0.14em; font-weight: 800; font-size: 0.95rem; padding: 11px 24px; border-radius: 999px; box-shadow: 0 3px 0 rgba(0,0,0,.2); }
 .dots { display: flex; gap: 6px; margin-top: 8px; }
 .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); background: var(--chip); }
 .dot.ok { background: var(--good); border-color: var(--good); } .dot.no { background: var(--bad); border-color: var(--bad); } .dot.cur { border-color: var(--ink); }
@@ -208,7 +210,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
 <div class="wrap">
   <header>
     <div class="title-block">
-      <h1>Sample &amp; Estimate</h1>
+      <div class="titlerow"><h1>Sample &amp; Estimate</h1><button type="button" class="btn yellow pill" data-test="cert" aria-pressed="false">Test prep</button></div>
       <p class="tagline">Count a few. Estimate the whole population.</p>
     </div>
     <div class="formula" id="formula" aria-live="polite"></div>
@@ -249,8 +251,7 @@ svg.pv.tv { width: auto; height: 230px; margin: 6px auto; max-width: 100%; }
         <button type="button" data-test="mark" aria-pressed="false">Mark and recapture test</button>
       </div>
     </div>
-    <p class="testnote"><b>Test practice:</b> 10 questions (some are word problems), miss only one, earn a certificate. The other two tests: 5 questions, easy and medium. Every box has to be right for a question to count.</p>
-    <button type="button" class="btn yellow" data-test="cert" aria-pressed="false">Test practice</button>
+    <p class="testnote">The yellow <b>Test prep</b> button at the top has 10 questions, some are word problems, miss only one, and earn a certificate. These two tests: 5 questions, easy and medium. Every box has to be right for a question to count.</p>
   </section>
   <div class="card testbar" id="testbar" hidden></div>
 
@@ -1155,7 +1156,7 @@ function markIssues(p, v) {
 }
 
 const CERT_LEN = 10, CERT_HARD = 3, CERT_MISSES = 1;
-const TEST_NAME = { sampling: 'Random sampling test', mark: 'Mark and recapture test', cert: 'Test practice' };
+const TEST_NAME = { sampling: 'Random sampling test', mark: 'Mark and recapture test', cert: 'Test prep' };
 function updateTestBar(done) {
   const t = state.test, bar = $('#testbar');
   bar.hidden = !t; if (!t) return;
@@ -1188,7 +1189,7 @@ function startTest(kind) {
     lv = shuffle(['easy', 'easy', 'medium', 'medium', pick(['easy', 'medium'])]);
     md = kind === 'mark' ? Array(TEST_LEN).fill('mark') : shuffle(['quad', 'quad', 'liquid', 'liquid', pick(['quad', 'liquid'])]);
   }
-  const nw = kind === 'cert' ? ri(2, 4) : 0; // Test practice: 2 to 4 of the 10 are word problems
+  const nw = kind === 'cert' ? ri(2, 4) : 0; // Test prep: 2 to 4 of the 10 are word problems
   const wf = shuffle([...Array(nw).fill(true), ...Array(kind === 'cert' ? CERT_LEN - nw : 0).fill(false)]);
   state.curWords = false;
   state.test = { kind, len: kind === 'cert' ? CERT_LEN : TEST_LEN, i: 0, score: 0, misses: 0, over: false, res: [], lv, md, wf };
@@ -1238,10 +1239,10 @@ function testSummary() {
 /* ---------- Certificate (same idea as Population Detective: name + period, copy as a picture) ---------- */
 function certPass() {
   const t = state.test; t.finishedAt = new Date();
-  $('#story').innerHTML = `<p><b>You passed Test practice!</b> ${t.score} of ${t.len} right${t.misses ? ' (you used your one allowed miss)' : ''}.</p><p>Type your name and period, then copy your certificate and paste it where your teacher asked.</p>`;
+  $('#story').innerHTML = `<p><b>You passed Test prep!</b> ${t.score} of ${t.len} right${t.misses ? ' (you used your one allowed miss)' : ''}.</p><p>Type your name and period, then copy your certificate and paste it where your teacher asked.</p>`;
   $('#scene').innerHTML = ''; $('#legend').textContent = '';
   $('#work').innerHTML = `<div class="card" id="certCard"><h2>Certificate of Completion</h2>
-    <p class="hint">Test practice: Random Sampling and Mark-Recapture. ${t.score} of ${t.len} correct.</p>
+    <p class="hint">Test prep: Random Sampling and Mark-Recapture. ${t.score} of ${t.len} correct.</p>
     <div class="certrow"><label for="certName">Your name</label><input class="num txt" id="certName" type="text" autocomplete="off" value="${esc(state.certName || '')}"></div>
     <div class="certrow"><label for="certPeriod">Period</label><input class="num txt" id="certPeriod" type="text" autocomplete="off" value="${esc(state.certPeriod || '')}"></div>
     <div class="actions"><button type="button" class="btn primary" id="certCopy">Copy certificate</button><button type="button" class="btn" data-test="cert">Take it again</button><button type="button" class="btn" data-mode="quad">Back to practice</button></div>
@@ -1258,7 +1259,7 @@ function certCanvas() {
   ctx.strokeStyle = '#f5b301'; ctx.lineWidth = 4; ctx.strokeRect(58, 58, W - 116, H - 116);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#0e6f6a'; ctx.font = font(700, 70); ctx.fillText('Certificate of Completion', W / 2, 180, W - 200);
-  ctx.fillStyle = '#566b68'; ctx.font = font(500, 36); ctx.fillText('Test Practice: Random Sampling and Mark-Recapture', W / 2, 245, W - 200);
+  ctx.fillStyle = '#566b68'; ctx.font = font(500, 36); ctx.fillText('Test Prep: Random Sampling and Mark-Recapture', W / 2, 245, W - 200);
   ctx.fillStyle = '#14282a'; ctx.font = font(700, 76); ctx.fillText(state.certName || '—', W / 2, 365, W - 240);
   ctx.strokeStyle = '#cdd9d3'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(360, 392); ctx.lineTo(W - 360, 392); ctx.stroke();
   ctx.fillStyle = '#566b68'; ctx.font = font(500, 34);
